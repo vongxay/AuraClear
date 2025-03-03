@@ -1,0 +1,86 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 30 25% 98%;
+    --foreground: 20 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 20 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 10% 15%;
+
+    --primary: 20 10% 15%;
+    --primary-foreground: 30 25% 98%;
+
+    --secondary: 30 10% 92%;
+    --secondary-foreground: 20 10% 15%;
+
+    --muted: 30 10% 92%;
+    --muted-foreground: 20 10% 40%;
+
+    --accent: 30 10% 92%;
+    --accent-foreground: 20 10% 15%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 30 25% 98%;
+
+    --border: 20 10% 85%;
+    --input: 20 10% 85%;
+    --ring: 20 10% 65%;
+
+    --radius: 0.5rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5 {
+    @apply font-serif;
+  }
+  
+  .clip-circle {
+    clip-path: circle(50% at 50% 50%);
+  }
+  
+  .hover-lift {
+    @apply transition-all duration-400 ease-out;
+  }
+  
+  .hover-lift:hover {
+    @apply transform -translate-y-1;
+  }
+  
+  .button-hover {
+    @apply relative overflow-hidden transition-all duration-300 ease-out;
+  }
+  
+  .button-hover::after {
+    @apply content-[""] absolute inset-0 w-full h-full bg-black/10 translate-y-full transition-transform duration-300 ease-out;
+  }
+  
+  .button-hover:hover::after {
+    @apply translate-y-0;
+  }
+  
+  .glass-card {
+    @apply backdrop-blur-md border border-white/10 bg-white/5;
+  }
+}
