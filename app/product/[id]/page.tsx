@@ -36,10 +36,11 @@ export async function generateMetadata({
   };
 }
 
-export default function ProductPage({ 
+// แก้ไข type definition ให้สอดคล้องกับ Next.js 15
+export default async function ProductPage({ 
   params 
-}: { 
-  params: ProductPageParams 
+}: {
+  params: { id: string }
 }) {
   const product = featuredProducts.find(p => p.id === params.id);
   
