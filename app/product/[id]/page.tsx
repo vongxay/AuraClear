@@ -19,9 +19,10 @@ export async function generateStaticParams() {
 export async function generateMetadata({ 
   params 
 }: { 
-  params: ProductPageParams 
+  params: Promise<ProductPageParams>
 }): Promise<Metadata> {
-  const product = featuredProducts.find(p => p.id === params.id);
+  const { id } = await params;
+  const product = featuredProducts.find(p => p.id === id);
   
   if (!product) {
     return {
@@ -37,12 +38,11 @@ export async function generateMetadata({
 }
 
 // แก้ไข type definition ให้สอดคล้องกับ Next.js 15
-export default async function ProductPage({ 
-  params 
-}: {
-  params: { id: string }
+export default async function ProductPage(props: {
+  params: Promise<{ id: string }>;
 }) {
-  const product = featuredProducts.find(p => p.id === params.id);
+  const { id } = await props.params;
+  const product = featuredProducts.find(p => p.id === id);
   
   if (!product) {
     notFound();
