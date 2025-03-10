@@ -5,9 +5,10 @@ import ProductDetails from '@/components/product-details';
 import RelatedProducts from '@/components/related-products';
 import { featuredProducts } from '@/data/products';
 
-type Props = {
-  params: { id: string };
-};
+// ใช้ type ที่ถูกต้องสำหรับ Next.js 15
+interface ProductPageParams {
+  id: string;
+}
 
 export async function generateStaticParams() {
   return featuredProducts.map((product) => ({
@@ -15,7 +16,11 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ 
+  params 
+}: { 
+  params: ProductPageParams 
+}): Promise<Metadata> {
   const product = featuredProducts.find(p => p.id === params.id);
   
   if (!product) {
@@ -31,7 +36,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function ProductPage({ params }: Props) {
+export default function ProductPage({ 
+  params 
+}: { 
+  params: ProductPageParams 
+}) {
   const product = featuredProducts.find(p => p.id === params.id);
   
   if (!product) {
