@@ -42,7 +42,7 @@ const Categories = () => {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-4">Shop by Category</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Explore our wide range of clear products organized by category to find exactly what you're looking for.
+            Explore our wide range of beauty products organized by category to find exactly what you&lsquo;re looking for.
           </p>
         </div>
 
@@ -50,19 +50,18 @@ const Categories = () => {
           {categories.map((category) => (
             <Link key={category.id} href={category.link} className="block group">
               <Card className="overflow-hidden border-0 shadow-md transition-all duration-300 group-hover:shadow-lg">
-                <CardContent className="p-0 relative">
-                  <div className="aspect-square relative overflow-hidden">
+                <CardContent className="relative">
+                  <div className="aspect-[3/4] relative overflow-hidden">
                     <Image
                       src={category.image}
                       alt={category.name}
                       fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 20vw"
+                      className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                   </div>
                   <div className="absolute bottom-0 left-0 right-0 p-4 text-white">
-                    <h3 className="text-xl font-semibold">{category.name}</h3>
+                    <h3 className="text-lg font-semibold">{category.name}</h3>
                   </div>
                 </CardContent>
               </Card>
@@ -73,5 +72,4 @@ const Categories = () => {
     </section>
   );
 };
-
 export default Categories;
