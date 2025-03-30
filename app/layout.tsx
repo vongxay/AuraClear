@@ -7,6 +7,7 @@ import Footer from '@/components/footer';
 import { Toaster } from '@/components/ui/toaster';
 import { CartProvider } from '@/context/cart-context';
 import { WishlistProvider } from '@/context/wishlist-context';
+import { AuthProvider } from '@/context/auth-context';
 
 // Optimize font loading
 const inter = Inter({ 
@@ -29,16 +30,18 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <ThemeProvider attribute="class" defaultTheme="light">
-          <CartProvider>
-            <WishlistProvider>
-              <div className="flex flex-col min-h-screen">
-                <Header />
-                <main className="flex-grow">{children}</main>
-                <Footer />
-              </div>
-              <Toaster />
-            </WishlistProvider>
-          </CartProvider>
+          <AuthProvider>
+            <CartProvider>
+              <WishlistProvider>
+                <div className="flex flex-col min-h-screen">
+                  <Header />
+                  <main className="flex-grow">{children}</main>
+                  <Footer />
+                </div>
+                <Toaster />
+              </WishlistProvider>
+            </CartProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>
