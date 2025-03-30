@@ -69,20 +69,20 @@ const RelatedProducts = ({ currentProductId, category }: RelatedProductsProps) =
     <section className="mt-12">
       <h2 className="text-xl font-bold mb-6">You May Also Like</h2>
       
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {relatedProducts.map((product) => (
           <Card key={product.id} className="overflow-hidden border-0 shadow-sm hover:shadow-md transition-all duration-300">
             <div className="relative">
               <Link href={`/product/${product.id}`}>
-                <div className="aspect-[4/5] relative overflow-hidden">
+                <div className="aspect-[4/3] relative overflow-hidden">
                   <Image
                     src={product.image}
                     alt={product.name}
                     fill
                     className="object-cover transition-transform duration-300 hover:scale-105"
-                    sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 33vw, 25vw"
                     loading="lazy"
-                    quality={80}
+                    quality={75}
                   />
                 </div>
               </Link>

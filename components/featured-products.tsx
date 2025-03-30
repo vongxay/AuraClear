@@ -67,52 +67,52 @@ const FeaturedProducts = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {featuredProducts.map((product) => (
-            <Card key={product.id} className="overflow-hidden border-0 shadow-md transition-all duration-300 hover:shadow-lg">
+            <Card key={product.id} className="overflow-hidden border-0 shadow-sm transition-all duration-300 hover:shadow-md">
               <div className="relative">
                 <Link href={`/product/${product.id}`}>
-                  <div className="aspect-[3/4] relative overflow-hidden">
+                  <div className="aspect-[4/5] relative overflow-hidden">
                     <Image
                       src={product.image}
                       alt={product.name}
                       fill
                       className="object-cover transition-transform duration-500 hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 20vw"
                     />
                   </div>
                 </Link>
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm hover:bg-white/90 text-foreground rounded-full"
+                  className="absolute top-2 right-2 bg-white/80 backdrop-blur-sm hover:bg-white/90 text-foreground rounded-full h-7 w-7"
                   onClick={() => toggleFavorite(product)}
                 >
                   <Heart 
-                    className={`h-5 w-5 ${isInWishlist(product.id) ? 'fill-pink-500 text-pink-500' : ''}`} 
+                    className={`h-4 w-4 ${isInWishlist(product.id) ? 'fill-pink-500 text-pink-500' : ''}`} 
                   />
                 </Button>
                 {product.isNew && (
-                  <Badge className="absolute top-2 left-2 bg-blue-500 hover:bg-blue-600">New</Badge>
+                  <Badge className="absolute top-2 left-2 bg-blue-500 hover:bg-blue-600 text-xs py-0 px-2">New</Badge>
                 )}
                 {product.isBestSeller && (
-                  <Badge className="absolute top-2 left-2 bg-amber-500 hover:bg-amber-600">Best Seller</Badge>
+                  <Badge className="absolute top-2 left-2 bg-amber-500 hover:bg-amber-600 text-xs py-0 px-2">Best Seller</Badge>
                 )}
                 {product.isOnSale && (
-                  <Badge className="absolute top-2 left-2 bg-pink-500 hover:bg-pink-600">Sale {product.discount}% Off</Badge>
+                  <Badge className="absolute top-2 left-2 bg-pink-500 hover:bg-pink-600 text-xs py-0 px-2">Sale {product.discount}% Off</Badge>
                 )}
               </div>
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <Link href={`/product/${product.id}`} className="block">
-                  <h3 className="font-semibold text-lg mb-1 hover:text-primary transition-colors">{product.name}</h3>
+                  <h3 className="font-medium text-base mb-1 hover:text-primary transition-colors line-clamp-1">{product.name}</h3>
                 </Link>
-                <p className="text-muted-foreground text-sm mb-2">{product.description}</p>
+                <p className="text-muted-foreground text-xs mb-2 line-clamp-2">{product.description}</p>
                 <div className="flex items-center mb-2">
                   <div className="flex items-center">
                     {[...Array(5)].map((_, i) => (
                       <Star
                         key={i}
-                        className={`h-4 w-4 ${
+                        className={`h-3 w-3 ${
                           i < Math.floor(product.rating)
                             ? 'text-amber-400 fill-amber-400'
                             : i < product.rating
@@ -122,27 +122,28 @@ const FeaturedProducts = () => {
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-muted-foreground ml-2">
+                  <span className="text-xs text-muted-foreground ml-2">
                     ({product.reviews})
                   </span>
                 </div>
                 <div className="flex items-center">
                   {product.isOnSale && product.originalPrice ? (
                     <>
-                      <span className="font-semibold text-lg">${product.price.toFixed(2)}</span>
-                      <span className="text-muted-foreground line-through ml-2">${product.originalPrice.toFixed(2)}</span>
+                      <span className="font-semibold text-base">${product.price.toFixed(2)}</span>
+                      <span className="text-muted-foreground text-xs line-through ml-2">${product.originalPrice.toFixed(2)}</span>
                     </>
                   ) : (
-                    <span className="font-semibold text-lg">${product.price.toFixed(2)}</span>
+                    <span className="font-semibold text-base">${product.price.toFixed(2)}</span>
                   )}
                 </div>
               </CardContent>
-              <CardFooter className="p-4 pt-0">
+              <CardFooter className="p-3 pt-0">
                 <Button 
-                  className="w-full bg-primary hover:bg-primary/90"
+                  className="w-full bg-primary hover:bg-primary/90 text-sm py-1"
+                  size="sm"
                   onClick={() => handleAddToCart(product)}
                 >
-                  <ShoppingBag className="h-4 w-4 mr-2" />
+                  <ShoppingBag className="h-3 w-3 mr-1" />
                   Add to Cart
                 </Button>
               </CardFooter>
