@@ -84,7 +84,7 @@ const FeaturedProducts = () => {
   );
 
   return (
-    <section className="py-20 bg-muted/30">
+    <section id="featured-products" className="py-20 bg-muted/30">
       <div className="container mx-auto px-4">
         {sectionTitle}
 

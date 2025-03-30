@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
@@ -18,7 +18,9 @@ import {
 const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [currentHash, setCurrentHash] = useState('');
   const pathname = usePathname();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { cartItems } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
@@ -37,10 +39,40 @@ const Header = memo(() => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  useEffect(() => {
+    setCurrentHash(window.location.hash);
+    
+    const handleHashChange = () => {
+      setCurrentHash(window.location.hash);
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    e.preventDefault();
+    
+    if (pathname !== '/') {
+      router.push('/');
+      setTimeout(() => {
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 300);
+    } else {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
+
   const navLinks = useMemo(() => [
     { name: 'Home', href: '/', icon: <Home className="h-5 w-5" />, thaiName: 'หน้าหลัก' },
-    { name: 'Shop', href: '/product', icon: <ShoppingCart className="h-5 w-5" />, thaiName: 'ร้านค้า' },
-    { name: 'Categories', href: '/categories', icon: <Grid className="h-5 w-5" />, thaiName: 'หมวดหมู่' },
+    { name: 'Product', href: '#featured-products', icon: <ShoppingCart className="h-5 w-5" />, thaiName: 'สินค้า', isHashLink: true },
+    { name: 'Categories', href: '#categories', icon: <Grid className="h-5 w-5" />, thaiName: 'หมวดหมู่', isHashLink: true },
     { name: 'Account', href: '/account', icon: <User className="h-5 w-5" />, thaiName: 'บัญชีผู้ใช้' },
     { name: 'About', href: '/about', icon: <Info className="h-5 w-5" />, thaiName: 'เกี่ยวกับ' },
   ], []);
@@ -61,17 +93,32 @@ const Header = memo(() => {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-8">
               {navLinks.map((link) => (
-                <Link
-                  key={link.name}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors hover:text-primary ${
-                    pathname === link.href
-                      ? 'text-primary'
-                      : 'text-muted-foreground'
-                  }`}
-                >
-                  {link.thaiName || link.name}
-                </Link>
+                link.isHashLink ? (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    onClick={(e) => handleSmoothScroll(e, link.href)}
+                    className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
+                      pathname === '/' && currentHash === link.href
+                        ? 'text-primary'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {link.thaiName || link.name}
+                  </a>
+                ) : (
+                  <Link
+                    key={link.name}
+                    href={link.href}
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      pathname === link.href
+                        ? 'text-primary'
+                        : 'text-muted-foreground'
+                    }`}
+                  >
+                    {link.thaiName || link.name}
+                  </Link>
+                )
               ))}
             </nav>
 
@@ -222,23 +269,44 @@ const Header = memo(() => {
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-50 border-t border-border">
         <div className="flex justify-around items-center h-16">
           {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
-                pathname === link.href
-                  ? 'text-pink-500'
-                  : 'text-muted-foreground'
-              }`}
-            >
-              <div className="mb-1">
-                {link.icon}
-              </div>
-              <span className="text-xs font-medium">{link.thaiName || link.name}</span>
-              {pathname === link.href && (
-                <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
-              )}
-            </Link>
+            link.isHashLink ? (
+              <a
+                key={link.name}
+                href={link.href}
+                onClick={(e) => handleSmoothScroll(e, link.href)}
+                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
+                  pathname === '/' && currentHash === link.href
+                    ? 'text-pink-500'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <div className="mb-1">
+                  {link.icon}
+                </div>
+                <span className="text-xs font-medium">{link.thaiName || link.name}</span>
+                {pathname === '/' && currentHash === link.href && (
+                  <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
+                )}
+              </a>
+            ) : (
+              <Link
+                key={link.name}
+                href={link.href}
+                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
+                  pathname === link.href
+                    ? 'text-pink-500'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <div className="mb-1">
+                  {link.icon}
+                </div>
+                <span className="text-xs font-medium">{link.thaiName || link.name}</span>
+                {pathname === link.href && (
+                  <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
+                )}
+              </Link>
+            )
           ))}
         </div>
       </div>
