@@ -34,27 +34,27 @@ const Footer = () => {
             <h3 className="font-semibold text-lg mb-4">Shop</h3>
             <ul className="space-y-2">
               <li>
-                <Link href="/shop/skincare" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/product/skincare" className="text-muted-foreground hover:text-foreground transition-colors">
                   Skincare
                 </Link>
               </li>
               <li>
-                <Link href="/shop/makeup" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/product/makeup" className="text-muted-foreground hover:text-foreground transition-colors">
                   Makeup
                 </Link>
               </li>
               <li>
-                <Link href="/shop/haircare" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/product/haircare" className="text-muted-foreground hover:text-foreground transition-colors">
                   Haircare
                 </Link>
               </li>
               <li>
-                <Link href="/shop/fragrance" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/product/fragrance" className="text-muted-foreground hover:text-foreground transition-colors">
                   Fragrance
                 </Link>
               </li>
               <li>
-                <Link href="/shop/bath-body" className="text-muted-foreground hover:text-foreground transition-colors">
+                <Link href="/product/bath-body" className="text-muted-foreground hover:text-foreground transition-colors">
                   Bath & Body
                 </Link>
               </li>

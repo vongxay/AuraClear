@@ -150,7 +150,7 @@ export default function AboutPage() {
                 ทั้งหมดพัฒนาด้วยความใส่ใจและความละเอียดเช่นเดียวกับสูตรแรกของเรา
               </p>
               <Button size="lg" className="bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 transition-all duration-300 shadow-md hover:shadow-pink-300/30 dark:hover:shadow-pink-800/30" asChild>
-                <Link href="/shop">สำรวจผลิตภัณฑ์ของเรา</Link>
+                <Link href="/product">สำรวจผลิตภัณฑ์ของเรา</Link>
               </Button>
             </motion.div>
             <motion.div 
@@ -250,7 +250,7 @@ export default function AboutPage() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button size="lg" className="bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 transition-all duration-300 shadow-md hover:shadow-pink-300/30 dark:hover:shadow-pink-800/30" asChild>
-                <Link href="/shop">เลือกซื้อสินค้า</Link>
+                <Link href="/product">เลือกซื้อสินค้า</Link>
               </Button>
               <Button size="lg" variant="outline" className="border-pink-200 dark:border-pink-800 hover:bg-pink-50 dark:hover:bg-pink-950/20 transition-all duration-300" asChild>
                 <Link href="/contact">ติดต่อเรา</Link>

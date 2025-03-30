@@ -83,7 +83,7 @@ export default function CheckoutSuccessPage() {
             </Link>
           </Button>
           <Button variant="outline" asChild>
-            <Link href="/shop">
+            <Link href="/product">
               <ShoppingBag className="h-4 w-4 mr-2" />
               Continue Shopping
             </Link>

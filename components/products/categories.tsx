@@ -10,7 +10,7 @@ const categories = [
     description: 'Nourish and protect your skin',
     icon: '✨',
     image: 'https://images.unsplash.com/photo-1556228720-195a672e8a03?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    link: '/shop/skincare'
+    link: '/product/skincare'
   },
   {
     id: 2,
@@ -18,7 +18,7 @@ const categories = [
     description: 'Express your beauty',
     icon: '💄',
     image: 'https://images.unsplash.com/photo-1596704017254-9759879d8e9c?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    link: '/shop/makeup'
+    link: '/product/makeup'
   },
   {
     id: 3,
@@ -26,7 +26,7 @@ const categories = [
     description: 'Styles that shine',
     icon: '💇‍♀️',
     image: 'https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    link: '/shop/haircare'
+    link: '/product/haircare'
   },
   {
     id: 4,
@@ -34,7 +34,7 @@ const categories = [
     description: 'Scents that linger',
     icon: '🌸',
     image: 'https://images.unsplash.com/photo-1615529162924-f8605388461d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    link: '/shop/fragrance'
+    link: '/product/fragrance'
   },
   {
     id: 5,
@@ -42,7 +42,7 @@ const categories = [
     description: 'Pamper yourself',
     icon: '🛁',
     image: 'https://images.unsplash.com/photo-1570194065650-d99fb4d8a609?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=800&q=80',
-    link: '/shop/bath-body'
+    link: '/product/bath-body'
   }
 ];
 

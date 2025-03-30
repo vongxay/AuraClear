@@ -8,7 +8,12 @@ import { Toaster } from '@/components/ui/toaster';
 import { CartProvider } from '@/context/cart-context';
 import { WishlistProvider } from '@/context/wishlist-context';
 
-const inter = Inter({ subsets: ['latin'] });
+// Optimize font loading
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap',
+  preload: true,
+});
 
 export const metadata: Metadata = {
   title: 'AuraClear | Premium Cosmetics',

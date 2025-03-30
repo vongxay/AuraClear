@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 
 export type CartItem = {
   id: string;
@@ -20,6 +20,8 @@ type CartContextType = {
   subtotal: number;
 };
 
+const CART_STORAGE_KEY = 'cart';
+
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
@@ -28,48 +30,61 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   // Load cart from localStorage on initial render
   useEffect(() => {
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
+    const loadCart = () => {
       try {
-        setCartItems(JSON.parse(storedCart));
+        const storedCart = localStorage.getItem(CART_STORAGE_KEY);
+        if (storedCart) {
+          setCartItems(JSON.parse(storedCart));
+        }
       } catch (error) {
         console.error('Failed to parse cart from localStorage:', error);
       }
-    }
-    setIsInitialized(true);
+      setIsInitialized(true);
+    };
+    
+    loadCart();
   }, []);
 
-  // Save cart to localStorage whenever it changes
+  // Save cart to localStorage when it changes - debounced to avoid frequent writes
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-    }
+    if (!isInitialized) return;
+    
+    const saveCart = () => {
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cartItems));
+      } catch (error) {
+        console.error('Failed to save cart to localStorage:', error);
+      }
+    };
+    
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveCart, 300);
+    return () => clearTimeout(timeoutId);
   }, [cartItems, isInitialized]);
 
-  const addToCart = (item: CartItem) => {
+  const addToCart = useCallback((item: CartItem) => {
     setCartItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex((i) => i.id === item.id);
       
       if (existingItemIndex > -1) {
         // Item exists, update quantity
-        const updatedItems = [...prevItems];
-        updatedItems[existingItemIndex] = {
-          ...updatedItems[existingItemIndex],
-          quantity: updatedItems[existingItemIndex].quantity + item.quantity,
-        };
-        return updatedItems;
+        return prevItems.map((cartItem, index) => 
+          index === existingItemIndex 
+            ? { ...cartItem, quantity: cartItem.quantity + item.quantity }
+            : cartItem
+        );
       } else {
         // Item doesn't exist, add it
         return [...prevItems, item];
       }
     });
-  };
+  }, []);
 
-  const removeFromCart = (itemId: string) => {
+  const removeFromCart = useCallback((itemId: string) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-  };
+  }, []);
 
-  const updateQuantity = (itemId: string, quantity: number) => {
+  const updateQuantity = useCallback((itemId: string, quantity: number) => {
     if (quantity <= 0) {
       removeFromCart(itemId);
       return;
@@ -80,31 +95,46 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
         item.id === itemId ? { ...item, quantity } : item
       )
     );
-  };
+  }, [removeFromCart]);
 
-  const clearCart = () => {
+  const clearCart = useCallback(() => {
     setCartItems([]);
-  };
+  }, []);
 
-  const totalItems = cartItems.reduce((total, item) => total + item.quantity, 0);
+  const totalItems = useMemo(() => 
+    cartItems.reduce((total, item) => total + item.quantity, 0),
+    [cartItems]
+  );
   
-  const subtotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
+  const subtotal = useMemo(() => 
+    cartItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    ),
+    [cartItems]
   );
 
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    cartItems,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    totalItems,
+    subtotal,
+  }), [
+    cartItems,
+    addToCart, 
+    removeFromCart, 
+    updateQuantity, 
+    clearCart, 
+    totalItems, 
+    subtotal
+  ]);
+
   return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart,
-        removeFromCart,
-        updateQuantity,
-        clearCart,
-        totalItems,
-        subtotal,
-      }}
-    >
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );

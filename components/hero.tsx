@@ -11,7 +11,7 @@ const heroSlides = [
     subtitle: "Premium skincare products for your daily routine",
     cta: "Shop Skincare",
     image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80",
-    link: "/shop/skincare"
+    link: "/product/skincare"
   },
   {
     id: 2,
@@ -19,7 +19,7 @@ const heroSlides = [
     subtitle: "Makeup essentials for every occasion",
     cta: "Shop Makeup",
     image: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80",
-    link: "/shop/makeup"
+    link: "/product/makeup"
   },
   {
     id: 3,
@@ -27,7 +27,7 @@ const heroSlides = [
     subtitle: "Scents that leave a lasting impression",
     cta: "Shop Fragrances",
     image: "https://images.unsplash.com/photo-1594035910387-fea47794261f?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1920&q=80",
-    link: "/shop/fragrance"
+    link: "/product/fragrance"
   }
 ];
 
@@ -61,7 +61,7 @@ const Hero = () => {
   const slide = heroSlides[currentSlide];
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-[50vh] md:h-screen w-full overflow-hidden">
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full">
         <Image

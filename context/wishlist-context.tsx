@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 
 type WishlistItem = {
   id: string;
@@ -18,6 +18,8 @@ type WishlistContextType = {
   totalItems: number;
 };
 
+const WISHLIST_STORAGE_KEY = 'wishlist';
+
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
@@ -26,25 +28,39 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
 
   // Load wishlist from localStorage on initial render
   useEffect(() => {
-    const storedWishlist = localStorage.getItem('wishlist');
-    if (storedWishlist) {
+    const loadWishlist = () => {
       try {
-        setWishlistItems(JSON.parse(storedWishlist));
+        const storedWishlist = localStorage.getItem(WISHLIST_STORAGE_KEY);
+        if (storedWishlist) {
+          setWishlistItems(JSON.parse(storedWishlist));
+        }
       } catch (error) {
         console.error('Failed to parse wishlist from localStorage:', error);
       }
-    }
-    setIsInitialized(true);
+      setIsInitialized(true);
+    };
+    
+    loadWishlist();
   }, []);
 
-  // Save wishlist to localStorage whenever it changes
+  // Save wishlist to localStorage whenever it changes - with debounce
   useEffect(() => {
-    if (isInitialized) {
-      localStorage.setItem('wishlist', JSON.stringify(wishlistItems));
-    }
+    if (!isInitialized) return;
+    
+    const saveWishlist = () => {
+      try {
+        localStorage.setItem(WISHLIST_STORAGE_KEY, JSON.stringify(wishlistItems));
+      } catch (error) {
+        console.error('Failed to save wishlist to localStorage:', error);
+      }
+    };
+    
+    // Debounce the save operation
+    const timeoutId = setTimeout(saveWishlist, 300);
+    return () => clearTimeout(timeoutId);
   }, [wishlistItems, isInitialized]);
 
-  const addToWishlist = (item: WishlistItem) => {
+  const addToWishlist = useCallback((item: WishlistItem) => {
     setWishlistItems((prevItems) => {
       const existingItemIndex = prevItems.findIndex((i) => i.id === item.id);
       
@@ -56,33 +72,41 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         return [...prevItems, item];
       }
     });
-  };
+  }, []);
 
-  const removeFromWishlist = (itemId: string) => {
+  const removeFromWishlist = useCallback((itemId: string) => {
     setWishlistItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-  };
+  }, []);
 
-  const isInWishlist = (itemId: string) => {
+  const isInWishlist = useCallback((itemId: string) => {
     return wishlistItems.some(item => item.id === itemId);
-  };
+  }, [wishlistItems]);
 
-  const clearWishlist = () => {
+  const clearWishlist = useCallback(() => {
     setWishlistItems([]);
-  };
+  }, []);
 
-  const totalItems = wishlistItems.length;
+  const totalItems = useMemo(() => wishlistItems.length, [wishlistItems]);
+
+  // Memoize the context value to prevent unnecessary re-renders
+  const contextValue = useMemo(() => ({
+    wishlistItems,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    clearWishlist,
+    totalItems,
+  }), [
+    wishlistItems,
+    addToWishlist,
+    removeFromWishlist,
+    isInWishlist,
+    clearWishlist,
+    totalItems
+  ]);
 
   return (
-    <WishlistContext.Provider
-      value={{
-        wishlistItems,
-        addToWishlist,
-        removeFromWishlist,
-        isInWishlist,
-        clearWishlist,
-        totalItems,
-      }}
-    >
+    <WishlistContext.Provider value={contextValue}>
       {children}
     </WishlistContext.Provider>
   );

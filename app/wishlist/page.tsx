@@ -129,7 +129,7 @@ export default function WishlistPage() {
       
       <div className="flex justify-between mt-8">
         <Button variant="outline" asChild>
-          <Link href="/shop">Continue Shopping</Link>
+          <Link href="/product">Continue Shopping</Link>
         </Button>
         <Button 
           variant="destructive" 
