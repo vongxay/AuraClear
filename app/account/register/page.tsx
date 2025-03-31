@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Eye, EyeOff, ArrowLeft, CheckCircle2, AlertCircle } from 'lucide-react';
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from '@/context/auth-context';
 
@@ -63,11 +63,14 @@ export default function RegisterPage() {
         setTimeout(() => {
           router.push('/account/login');
         }, 3000);
-      } else {
-        setError('เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
       }
-    } catch (err) {
-      setError('เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+    } catch (err: any) {
+      // ดักจับข้อผิดพลาดที่เกิดขึ้นระหว่างการลงทะเบียน
+      if (err.message && err.message.includes('already registered')) {
+        setError('อีเมลนี้มีการลงทะเบียนในระบบแล้ว กรุณาใช้อีเมลอื่นหรือเข้าสู่ระบบด้วยอีเมลนี้');
+      } else {
+        setError(err.message || 'เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+      }
       console.error('Registration error:', err);
     }
   };
@@ -200,8 +203,9 @@ export default function RegisterPage() {
                 </div>
                 
                 {error && (
-                  <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm dark:bg-red-950 dark:text-red-300">
-                    {error}
+                  <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm dark:bg-red-950 dark:text-red-300 flex items-start">
+                    <AlertCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+                    <span>{error}</span>
                   </div>
                 )}
 

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useMemo, memo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info } from 'lucide-react';
+import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info, UserCheck, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { useCart } from '@/context/cart-context';
@@ -24,6 +25,8 @@ const Header = memo(() => {
   const { theme, setTheme } = useTheme();
   const { cartItems } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userAvatar, setUserAvatar] = useState('');
 
   const totalItems = useMemo(() => 
     cartItems.reduce((total, item) => total + item.quantity, 0), 
@@ -174,11 +177,32 @@ const Header = memo(() => {
                   )}
                 </Button>
               </Link>
-              <Link href="/account">
-                <Button variant="ghost" size="icon" aria-label="Account">
-                  <User className="h-5 w-5" />
-                </Button>
-              </Link>
+              {isLoggedIn ? (
+                <div className="relative p-2 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full transform scale-110 shadow-lg hover:scale-125 transition-transform cursor-pointer">
+                  {userAvatar ? (
+                    <Link href="/account">
+                      <Image 
+                        src={userAvatar} 
+                        width={20} 
+                        height={20} 
+                        className="rounded-full hover:opacity-80 transition-opacity" 
+                        alt="Profile" 
+                      />
+                    </Link>
+                  ) : (
+                    <Link href="/account">
+                      <UserCheck className="h-5 w-5 text-white hover:text-gray-200 transition-colors" />
+                    </Link>
+                  )}
+                  <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></span>
+                </div>
+              ) : (
+                <Link href="/account">
+                  <div className="p-2 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary/70 hover:scale-110 transition-all cursor-pointer">
+                    <LogIn className="h-5 w-5 hover:text-primary transition-colors" />
+                  </div>
+                </Link>
+              )}
             </div>
 
             {/* Mobile Header Actions - Simplified */}

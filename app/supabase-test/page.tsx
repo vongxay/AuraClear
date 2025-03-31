@@ -36,7 +36,7 @@ export default function SupabaseTestPage() {
           id: 'session-check', 
           created_at: new Date().toISOString(),
           provider: 'supabase-auth',
-          url: supabase.supabaseUrl
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL
         }
       ]);
     } catch (error: any) {
@@ -49,7 +49,7 @@ export default function SupabaseTestPage() {
   const testWrite = async () => {
     try {
       // ทดสอบผ่าน storage API ซึ่งไม่จำเป็นต้องมีตาราง health_check
-      const { data, error } = await supabase.storage.getBuckets();
+      const { data, error } = await supabase.storage.listBuckets();
       
       if (error) {
         toast({
