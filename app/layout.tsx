@@ -8,6 +8,8 @@ import { Toaster } from '@/components/ui/toaster';
 import { CartProvider } from '@/context/cart-context';
 import { WishlistProvider } from '@/context/wishlist-context';
 import { AuthProvider } from '@/context/auth-context';
+import { checkSupabaseConnection } from '@/lib/supabase';
+import { useEffect } from 'react';
 
 // Optimize font loading
 const inter = Inter({ 
@@ -20,6 +22,21 @@ export const metadata: Metadata = {
   title: 'AuraClear | Premium Cosmetics',
   description: 'ค้นพบเครื่องสำอางและผลิตภัณฑ์ดูแลผิวระดับพรีเมียมที่ AuraClear',
 };
+
+// ตรวจสอบการเชื่อมต่อกับ Supabase ในช่วงการสร้างแอพ
+if (process.env.NODE_ENV !== 'production') {
+  checkSupabaseConnection()
+    .then(isConnected => {
+      if (isConnected) {
+        console.log('✅ เชื่อมต่อกับ Supabase สำเร็จ!');
+      } else {
+        console.warn('⚠️ ไม่สามารถเชื่อมต่อกับ Supabase ได้ โปรดตรวจสอบการตั้งค่าใน .env.local');
+      }
+    })
+    .catch(error => {
+      console.error('❌ เกิดข้อผิดพลาดในการตรวจสอบการเชื่อมต่อกับ Supabase:', error);
+    });
+}
 
 export default function RootLayout({
   children,

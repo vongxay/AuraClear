@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase, getCurrentUser, signIn, signUp, signOut } from '@/lib/supabase';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 type User = {
   id: string;
@@ -42,35 +44,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // ในอนาคตตรงนี้ควรเรียก API เพื่อตรวจสอบโทเค็นและดึงข้อมูลผู้ใช้
-        // ตรวจสอบว่ามี token ใน localStorage หรือไม่
-        const token = localStorage.getItem('auth_token');
+        // ดึงข้อมูลผู้ใช้จาก Supabase
+        const supabaseUser = await getCurrentUser();
         
-        if (token) {
-          // จำลองการดึงข้อมูลผู้ใช้จาก API
-          // (ในระบบจริงจะต้องส่ง token ไปยัง API เพื่อดึงข้อมูลผู้ใช้)
-          const mockUser: User = {
-            id: '123456',
-            firstName: 'สมชาย',
-            lastName: 'รักช้อป',
-            email: 'somchai@example.com',
-            phone: '081-234-5678',
-            avatarUrl: '',
-            points: 250,
-            memberSince: '15 มีนาคม 2023',
-          };
+        if (supabaseUser) {
+          // ดึงข้อมูลผู้ใช้จาก Supabase Profile
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', supabaseUser.id)
+            .single();
+            
+          if (profileError) throw profileError;
           
-          setUser(mockUser);
+          if (profileData) {
+            setUser({
+              id: supabaseUser.id,
+              firstName: profileData.first_name || '',
+              lastName: profileData.last_name || '',
+              email: supabaseUser.email || '',
+              phone: profileData.phone || '',
+              avatarUrl: profileData.avatar_url || '',
+              points: profileData.points || 0,
+              memberSince: new Date(profileData.created_at || Date.now()).toLocaleDateString('th-TH', { 
+                year: 'numeric', month: 'long', day: 'numeric' 
+              }),
+            });
+          }
         }
       } catch (error) {
-        console.error('Failed to check authentication status:', error);
-        localStorage.removeItem('auth_token');
+        console.error('เกิดข้อผิดพลาดในการตรวจสอบสถานะการเข้าสู่ระบบ:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
+    // ฟังก์ชันติดตามการเปลี่ยนแปลงสถานะการเข้าสู่ระบบ
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          checkAuth();
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
     checkAuth();
+
+    // ยกเลิกการติดตามเมื่อ component ถูกทำลาย
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // ฟังก์ชันล็อกอิน
@@ -78,52 +103,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // ในอนาคตตรงนี้จะเป็นการเรียกใช้ API สำหรับการล็อกอิน
-      // จำลองการล็อกอิน (ในระบบจริงจะต้องส่งข้อมูลไปยัง API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { user: supabaseUser, session } = await signIn(email, password);
       
-      // ตรวจสอบข้อมูลผู้ใช้ (ในที่นี้เราใช้การจำลอง)
-      if (email === 'test@example.com' && password === 'password123') {
-        // จำลองการได้รับ token จาก API
-        const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('auth_token', mockToken);
-        
-        // จำลองข้อมูลผู้ใช้
-        const mockUser: User = {
-          id: '123456',
-          firstName: 'สมชาย',
-          lastName: 'รักช้อป',
-          email: email,
-          phone: '081-234-5678',
-          avatarUrl: '',
-          points: 250,
-          memberSince: '15 มีนาคม 2023',
-        };
-        
-        setUser(mockUser);
-        return true;
-      } else {
-        // ในกรณีที่ข้อมูลผิด ให้จำลองการล็อกอินด้วยข้อมูลจำลอง (เฉพาะในตัวอย่างนี้)
-        // ในระบบจริงควรส่งข้อความเตือนว่าอีเมลหรือรหัสผ่านไม่ถูกต้อง
-        const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('auth_token', mockToken);
-        
-        const mockUser: User = {
-          id: '123456',
-          firstName: 'ผู้ใช้',
-          lastName: 'ทดสอบ',
-          email: email,
-          phone: '081-234-5678',
-          avatarUrl: '',
-          points: 100,
-          memberSince: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
-        };
-        
-        setUser(mockUser);
-        return true;
+      if (!supabaseUser) {
+        return false;
       }
+      
+      // ดึงข้อมูลผู้ใช้จาก Supabase Profile
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', supabaseUser.id)
+        .single();
+        
+      if (profileError && profileError.code !== 'PGRST116') {
+        console.error('เกิดข้อผิดพลาดในการดึงข้อมูลโปรไฟล์:', profileError);
+      }
+      
+      // ถ้าไม่มีข้อมูลโปรไฟล์ให้สร้างใหม่
+      if (!profileData) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert([{ 
+            id: supabaseUser.id,
+            email: email,
+            first_name: '',
+            last_name: '',
+            points: 0,
+          }]);
+          
+        if (insertError) {
+          console.error('เกิดข้อผิดพลาดในการสร้างโปรไฟล์:', insertError);
+        }
+      }
+      
+      // ตั้งค่าข้อมูลผู้ใช้
+      setUser({
+        id: supabaseUser.id,
+        firstName: profileData?.first_name || '',
+        lastName: profileData?.last_name || '',
+        email: email,
+        phone: profileData?.phone || '',
+        avatarUrl: profileData?.avatar_url || '',
+        points: profileData?.points || 0,
+        memberSince: new Date(profileData?.created_at || Date.now()).toLocaleDateString('th-TH', { 
+          year: 'numeric', month: 'long', day: 'numeric' 
+        }),
+      });
+      
+      return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('เข้าสู่ระบบล้มเหลว:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -135,14 +165,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // ในอนาคตตรงนี้จะเป็นการเรียกใช้ API สำหรับการลงทะเบียน
-      // จำลองการลงทะเบียน
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { user: supabaseUser, session } = await signUp(userData.email, userData.password);
       
-      // จำลองการสร้างบัญชีใหม่สำเร็จ
+      if (!supabaseUser) {
+        return false;
+      }
+      
+      // สร้างโปรไฟล์ในตาราง profiles
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: supabaseUser.id,
+          email: userData.email,
+          first_name: userData.firstName,
+          last_name: userData.lastName,
+          points: 0,
+        }]);
+        
+      if (profileError) {
+        console.error('เกิดข้อผิดพลาดในการสร้างโปรไฟล์:', profileError);
+        return false;
+      }
+      
+      // อย่าล็อกอินอัตโนมัติ ให้ผู้ใช้ยืนยันอีเมลก่อน (ถ้าเปิดใช้งานคุณสมบัตินี้ใน Supabase)
       return true;
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error('การลงทะเบียนล้มเหลว:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -150,16 +198,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ฟังก์ชันออกจากระบบ
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    setUser(null);
-    router.push('/account');
+  const logout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      router.push('/account');
+    } catch (error) {
+      console.error('ออกจากระบบล้มเหลว:', error);
+    }
   };
 
   // ฟังก์ชันอัพเดตข้อมูลผู้ใช้
-  const updateUser = (userData: Partial<User>) => {
+  const updateUser = async (userData: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...userData });
+      try {
+        // อัพเดตข้อมูลในตาราง profiles
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            first_name: userData.firstName || user.firstName,
+            last_name: userData.lastName || user.lastName,
+            phone: userData.phone || user.phone,
+            avatar_url: userData.avatarUrl || user.avatarUrl,
+          })
+          .eq('id', user.id);
+          
+        if (error) throw error;
+        
+        // อัพเดตข้อมูลในสเตท
+        setUser({ ...user, ...userData });
+      } catch (error) {
+        console.error('การอัพเดตข้อมูลผู้ใช้ล้มเหลว:', error);
+      }
     }
   };
 

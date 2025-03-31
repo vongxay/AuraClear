@@ -174,9 +174,11 @@ const Header = memo(() => {
                   )}
                 </Button>
               </Link>
-              <Button variant="ghost" size="icon" aria-label="Account">
-                <User className="h-5 w-5" />
-              </Button>
+              <Link href="/account">
+                <Button variant="ghost" size="icon" aria-label="Account">
+                  <User className="h-5 w-5" />
+                </Button>
+              </Link>
             </div>
 
             {/* Mobile Header Actions - Simplified */}
