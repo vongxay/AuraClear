@@ -50,8 +50,23 @@ const Header = memo(() => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  const isHashActive = (href: string) => {
+    if (!href.startsWith('#')) return false;
+    
+    const targetId = href.substring(1);
+    const currentId = currentHash.startsWith('#') ? currentHash.substring(1) : currentHash;
+    
+    if (currentHash === '' && href === '/') return true;
+    
+    return targetId === currentId;
+  };
+
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    
+    if (href.startsWith('#')) {
+      setCurrentHash(href);
+    }
     
     if (pathname !== '/') {
       router.push('/');
@@ -99,7 +114,7 @@ const Header = memo(() => {
                     href={link.href}
                     onClick={(e) => handleSmoothScroll(e, link.href)}
                     className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
-                      pathname === '/' && currentHash === link.href
+                      pathname === '/' && isHashActive(link.href)
                         ? 'text-primary'
                         : 'text-muted-foreground'
                     }`}
@@ -268,46 +283,85 @@ const Header = memo(() => {
       {/* Mobile Bottom Navigation - App-like experience */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-50 border-t border-border">
         <div className="flex justify-around items-center h-16">
-          {navLinks.map((link) => (
-            link.isHashLink ? (
+          {navLinks.map((link, index) => {
+            const colors = ['from-pink-500 to-purple-500', 'from-sky-400 to-blue-500', 'from-amber-500 to-orange-500', 'from-emerald-400 to-teal-500', 'from-rose-400 to-red-500'];
+            const bgColor = colors[index % colors.length];
+            
+            let isActive = false;
+            
+            if (link.isHashLink) {
+              if (pathname === '/') {
+                isActive = link.href === currentHash || 
+                          (link.href.startsWith('#') && '#' + link.href.substring(1) === currentHash);
+              }
+            } else {
+              if (link.href === '/' && pathname === '/') {
+                isActive = !currentHash || currentHash === '';
+              } else {
+                isActive = pathname === link.href;
+              }
+            }
+            
+            return link.isHashLink ? (
               <a
                 key={link.name}
                 href={link.href}
-                onClick={(e) => handleSmoothScroll(e, link.href)}
-                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
-                  pathname === '/' && currentHash === link.href
-                    ? 'text-pink-500'
-                    : 'text-muted-foreground'
+                onClick={(e) => {
+                  handleSmoothScroll(e, link.href);
+                  setCurrentHash(link.href);
+                }}
+                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors duration-300 ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <div className="mb-1">
+                <div className={`relative mb-1 p-2 transition-all duration-300 ${
+                  isActive
+                    ? `bg-gradient-to-br ${bgColor} rounded-full transform scale-110 shadow-lg`
+                    : 'rounded-full'
+                }`}>
                   {link.icon}
+                  {isActive && (
+                    <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse" style={{ animationDuration: '3s' }}></span>
+                  )}
                 </div>
-                <span className="text-xs font-medium">{link.thaiName || link.name}</span>
-                {pathname === '/' && currentHash === link.href && (
-                  <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
+                <span className={`text-xs font-medium transition-all duration-300 ${
+                  isActive ? 'font-bold' : ''
+                }`}>{link.thaiName || link.name}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 w-10 h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-t-md"></span>
                 )}
               </a>
             ) : (
               <Link
                 key={link.name}
                 href={link.href}
-                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
-                  pathname === link.href
-                    ? 'text-pink-500'
-                    : 'text-muted-foreground'
+                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors duration-300 ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <div className="mb-1">
+                <div className={`relative mb-1 p-2 transition-all duration-300 ${
+                  isActive
+                    ? `bg-gradient-to-br ${bgColor} rounded-full transform scale-110 shadow-lg`
+                    : 'rounded-full'
+                }`}>
                   {link.icon}
+                  {isActive && (
+                    <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse" style={{ animationDuration: '3s' }}></span>
+                  )}
                 </div>
-                <span className="text-xs font-medium">{link.thaiName || link.name}</span>
-                {pathname === link.href && (
-                  <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
+                <span className={`text-xs font-medium transition-all duration-300 ${
+                  isActive ? 'font-bold' : ''
+                }`}>{link.thaiName || link.name}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 w-10 h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-t-md"></span>
                 )}
               </Link>
-            )
-          ))}
+            );
+          })}
         </div>
       </div>
       
