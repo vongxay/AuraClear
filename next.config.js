@@ -11,6 +11,7 @@ const nextConfig = {
   experimental: {
     optimizeCss: true,
     scrollRestoration: true,
+    transpilePackages: ['framer-motion', 'lucide-react'],
   },
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
@@ -22,6 +23,13 @@ const nextConfig = {
   // Enable brotli compression for better performance
   compress: true,
   poweredByHeader: false,
+  telemetry: { telemetryDisabled: true },
+  tracing: { 
+    ignoreRootSpans: true,
+    tracingIgnoreSpans: {
+      all: true
+    }
+  },
 };
 
 module.exports = nextConfig;

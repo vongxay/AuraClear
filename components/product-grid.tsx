@@ -39,7 +39,7 @@ const ProductCard = memo(({
     <Card className="overflow-hidden border-0 shadow-sm transition-all duration-300 hover:shadow-md">
       <div className="relative">
         <Link href={`/product/${product.id}`}>
-          <div className="aspect-[4/5] relative overflow-hidden">
+          <div className="aspect-[1/1] relative overflow-hidden">
             <Image
               src={product.image}
               alt={product.name}
@@ -250,7 +250,7 @@ const ProductGrid = () => {
         onSortChange={handleSortChange} 
       />
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4">
         {productCards}
       </div>
     </div>
