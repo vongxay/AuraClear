@@ -8,13 +8,18 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 
 type User = {
   id: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone?: string;
   avatarUrl?: string;
   points: number;
   memberSince: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
 };
 
 type AuthContextType = {
@@ -28,8 +33,8 @@ type AuthContextType = {
 };
 
 type RegisterData = {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
 };
@@ -80,8 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (!createSuccess) {
               // แสดงข้อมูลข้อผิดพลาดที่เป็นประโยชน์มากขึ้น
               const errorMessage = createError?.message || 'ไม่มีรายละเอียดข้อผิดพลาด';
-              const errorDetails = createError?.details || '';
-              console.error(`ไม่สามารถสร้างข้อมูลลูกค้าได้: ${errorMessage}`, errorDetails);
+              console.error(`ไม่สามารถสร้างข้อมูลลูกค้าได้: ${errorMessage}`);
               setIsLoading(false);
               return;
             }
@@ -92,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (refetchSuccess && newCustomer) {
               setUser({
                 id: supabaseUser.id,
-                firstName: newCustomer.first_name || '',
-                lastName: newCustomer.last_name || '',
+                first_name: newCustomer.first_name || '',
+                last_name: newCustomer.last_name || '',
                 email: supabaseUser.email || '',
                 phone: newCustomer.phone || '',
                 points: newCustomer.points || 0,
@@ -108,8 +112,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // ถ้าพบข้อมูลลูกค้า ให้ใช้ข้อมูลที่มีอยู่
             setUser({
               id: supabaseUser.id,
-              firstName: customer.first_name || '',
-              lastName: customer.last_name || '',
+              first_name: customer.first_name || '',
+              last_name: customer.last_name || '',
               email: supabaseUser.email || '',
               phone: customer.phone || '',
               points: customer.points || 0,
@@ -184,8 +188,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!createSuccess) {
           // แสดงข้อมูลข้อผิดพลาดที่เป็นประโยชน์มากขึ้น
           const errorMessage = createError?.message || 'ไม่มีรายละเอียดข้อผิดพลาด';
-          const errorDetails = createError?.details || '';
-          console.error(`เกิดข้อผิดพลาดในการสร้างข้อมูลลูกค้า: ${errorMessage}`, errorDetails);
+          console.error(`เกิดข้อผิดพลาดในการสร้างข้อมูลลูกค้า: ${errorMessage}`);
           return false;
         }
         
@@ -195,8 +198,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (refetchSuccess && newCustomer) {
           setUser({
             id: supabaseUser.id,
-            firstName: newCustomer.first_name || '',
-            lastName: newCustomer.last_name || '',
+            first_name: newCustomer.first_name || '',
+            last_name: newCustomer.last_name || '',
             email: email,
             phone: newCustomer.phone || '',
             points: newCustomer.points || 0,
@@ -214,9 +217,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // ตั้งค่าข้อมูลผู้ใช้จากข้อมูลลูกค้าที่มีอยู่
       setUser({
         id: supabaseUser.id,
-        firstName: customer.first_name || '',
-        lastName: customer.last_name || '',
-        email: email,
+        first_name: customer.first_name || '',
+        last_name: customer.last_name || '',
+        email: supabaseUser.email || '',
         phone: customer.phone || '',
         points: customer.points || 0,
         memberSince: new Date(customer.created_at || Date.now()).toLocaleDateString('th-TH', { 
@@ -259,7 +262,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบหรือไม่
-      if (!supabaseUser.id || !userData.email || !userData.firstName || !userData.lastName) {
+      if (!supabaseUser.id || !userData.email || !userData.first_name || !userData.last_name) {
         console.error('ไม่สามารถสร้างข้อมูลลูกค้าได้: ข้อมูลผู้ใช้ไม่ครบถ้วน');
         setError('ข้อมูลสำหรับการลงทะเบียนไม่ครบถ้วน โปรดระบุข้อมูลให้ครบถ้วน');
         return false;
@@ -269,15 +272,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const { success: customerSuccess, error: customerError } = await createOrUpdateCustomer({
         id: supabaseUser.id,
         email: userData.email,
-        first_name: userData.firstName,
-        last_name: userData.lastName,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
       });
         
       if (!customerSuccess) {
         // แสดงข้อมูลข้อผิดพลาดที่เป็นประโยชน์มากขึ้น
         const errorMessage = customerError?.message || 'ไม่มีรายละเอียดข้อผิดพลาด';
-        const errorDetails = customerError?.details || '';
-        console.error(`เกิดข้อผิดพลาดในการสร้างข้อมูลลูกค้า: ${errorMessage}`, errorDetails);
+        console.error(`เกิดข้อผิดพลาดในการสร้างข้อมูลลูกค้า: ${errorMessage}`);
         setError('เกิดข้อผิดพลาดในการสร้างข้อมูลบัญชี โปรดลองอีกครั้ง');
         return false;
       }
@@ -317,9 +319,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { success } = await createOrUpdateCustomer({
           id: user.id,
           email: user.email,
-          first_name: userData.firstName || user.firstName,
-          last_name: userData.lastName || user.lastName,
+          first_name: userData.first_name || user.first_name,
+          last_name: userData.last_name || user.last_name,
           phone: userData.phone || user.phone,
+          address: userData.address || user.address,
+          city: userData.city || user.city,
+          state: userData.state || user.state,
+          postal_code: userData.postal_code || user.postal_code,
+          country: userData.country || user.country
         });
           
         if (!success) throw new Error('ไม่สามารถอัพเดตข้อมูลลูกค้าได้');

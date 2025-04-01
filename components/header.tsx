@@ -206,12 +206,12 @@ const Header = memo(() => {
                         className="rounded-full hover:opacity-80 transition-opacity" 
                         alt="Profile" 
                       />
-                      <span className="sr-only">โปรไฟล์ของ {user.firstName}</span>
+                      <span className="sr-only">โปรไฟล์ของ {user.first_name}</span>
                     </Link>
                   ) : (
                     <Link href="/account/profile">
                       <UserCheck className="h-5 w-5 text-white hover:text-gray-200 transition-colors" />
-                      <span className="sr-only">โปรไฟล์ของ {user?.firstName}</span>
+                      <span className="sr-only">โปรไฟล์ของ {user?.first_name}</span>
                     </Link>
                   )}
                   <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></span>
@@ -291,7 +291,7 @@ const Header = memo(() => {
                             )}
                           </div>
                           <div>
-                            <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                            <p className="font-medium">{user?.first_name} {user?.last_name}</p>
                             <p className="text-xs text-muted-foreground">แต้มสะสม: {user?.points || 0} แต้ม</p>
                           </div>
                         </div>

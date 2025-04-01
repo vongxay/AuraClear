@@ -12,8 +12,8 @@ import { Eye, EyeOff, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 
 export default function RegisterPage() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [first_name, setFirstName] = useState('');
+  const [last_name, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -43,8 +43,8 @@ export default function RegisterPage() {
 
     try {
       const success = await register({
-        firstName,
-        lastName,
+        first_name,
+        last_name,
         email,
         password
       });
@@ -98,23 +98,23 @@ export default function RegisterPage() {
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="firstName">ชื่อ</Label>
+                      <Label htmlFor="first_name">ชื่อ</Label>
                       <Input
-                        id="firstName"
+                        id="first_name"
                         type="text"
                         placeholder="ชื่อของคุณ"
-                        value={firstName}
+                        value={first_name}
                         onChange={(e) => setFirstName(e.target.value)}
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="lastName">นามสกุล</Label>
+                      <Label htmlFor="last_name">นามสกุล</Label>
                       <Input
-                        id="lastName"
+                        id="last_name"
                         type="text"
                         placeholder="นามสกุลของคุณ"
-                        value={lastName}
+                        value={last_name}
                         onChange={(e) => setLastName(e.target.value)}
                         required
                       />
