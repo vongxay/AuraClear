@@ -59,8 +59,8 @@ export async function createOrUpdateCustomer({
     }
     
     // ตรวจสอบว่าข้อมูลที่จำเป็นมีครบหรือไม่
-    if (!id || !email) {
-      throw new Error('ข้อมูล ID หรืออีเมลไม่ครบถ้วน');
+    if (!email || !first_name || !last_name) {
+      throw new Error('ข้อมูลอีเมล ชื่อ หรือนามสกุลไม่ครบถ้วน');
     }
 
     // ตรวจสอบการเข้าถึงตาราง customers
@@ -69,24 +69,23 @@ export async function createOrUpdateCustomer({
       throw new Error(`ไม่สามารถเข้าถึงตาราง customers ได้: ${JSON.stringify(tableError)}`);
     }
 
-    // ตรวจสอบว่ามีลูกค้าในระบบแล้วหรือไม่
-    const { data: existingCustomer, error: fetchError } = await supabase
+    // ตรวจสอบว่ามีลูกค้าที่ใช้อีเมลนี้ในระบบแล้วหรือไม่
+    const { data: existingCustomerByEmail, error: fetchEmailError } = await supabase
       .from('customers')
       .select('*')
-      .eq('id', id)
+      .eq('email', email)
       .single();
 
-    if (fetchError && fetchError.code !== 'PGRST116') { 
+    if (fetchEmailError && fetchEmailError.code !== 'PGRST116') { 
       // PGRST116 คือ error code เมื่อไม่พบข้อมูล
-      throw fetchError;
+      throw fetchEmailError;
     }
 
-    if (existingCustomer) {
-      // ถ้ามีลูกค้าอยู่แล้ว ให้อัพเดตข้อมูล
+    if (existingCustomerByEmail) {
+      // ถ้ามีลูกค้าที่ใช้อีเมลนี้อยู่แล้ว ให้อัพเดตข้อมูล
       const { error: updateError } = await supabase
         .from('customers')
         .update({
-          email,
           first_name,
           last_name,
           phone,
@@ -97,16 +96,17 @@ export async function createOrUpdateCustomer({
           country,
           updated_at: new Date().toISOString()
         })
-        .eq('id', id);
+        .eq('id', existingCustomerByEmail.id);
 
       if (updateError) throw updateError;
-      return { success: true, operation: 'updated' };
+      return { success: true, operation: 'updated', customer_id: existingCustomerByEmail.id };
     } else {
-      // ถ้ายังไม่มีลูกค้า ให้สร้างข้อมูลใหม่
-      const { error: insertError } = await supabase
+      // ถ้ายังไม่มีลูกค้าที่ใช้อีเมลนี้ ให้สร้างข้อมูลใหม่
+      // หากไม่มีการระบุ id ให้ใช้ UUID ที่สร้างโดย Supabase
+      const { data: newCustomer, error: insertError } = await supabase
         .from('customers')
         .insert([{
-          id,
+          id: id || undefined, // ถ้าไม่ได้ระบุ id ให้เป็น undefined เพื่อให้ Supabase สร้าง UUID ใหม่
           email,
           first_name,
           last_name,
@@ -122,10 +122,12 @@ export async function createOrUpdateCustomer({
           total_spent: 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
-        }]);
+        }])
+        .select()
+        .single();
 
       if (insertError) throw insertError;
-      return { success: true, operation: 'created' };
+      return { success: true, operation: 'created', customer_id: newCustomer?.id };
     }
   } catch (error) {
     console.error('เกิดข้อผิดพลาดในการสร้างหรืออัพเดตข้อมูลลูกค้า:', error);

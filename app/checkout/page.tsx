@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,12 +12,15 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, CreditCard, Truck, ShieldCheck } from 'lucide-react';
+import { useAuth } from '@/context/auth-context';
 
 export default function CheckoutPage() {
   const router = useRouter();
   const { cartItems, subtotal, clearCart } = useCart();
   const { toast } = useToast();
+  const { isLoggedIn, user } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const shipping = subtotal > 50 ? 0 : 5.99;
   const tax = subtotal * 0.08; // 8% tax rate
@@ -32,11 +35,44 @@ export default function CheckoutPage() {
     city: '',
     state: '',
     zipCode: '',
-    country: 'United States',
+    country: 'Thailand',
     paymentMethod: 'credit-card',
     saveInfo: false,
     sameAddress: true,
   });
+
+  // ตรวจสอบสถานะการล็อกอินและดึงข้อมูลผู้ใช้
+  useEffect(() => {
+    // ถ้าไม่ได้ล็อกอิน ให้ส่งไปยังหน้าล็อกอิน
+    if (!isLoggedIn) {
+      toast({
+        title: "กรุณาเข้าสู่ระบบ",
+        description: "คุณต้องเข้าสู่ระบบหรือลงทะเบียนก่อนดำเนินการสั่งซื้อ",
+        duration: 3000,
+      });
+      router.push('/account');
+      return;
+    }
+
+    // ถ้าตะกร้าว่าง ให้ส่งไปยังหน้าตะกร้า
+    if (cartItems.length === 0) {
+      router.push('/cart');
+      return;
+    }
+
+    // เติมข้อมูลจากโปรไฟล์ผู้ใช้
+    if (user) {
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      }));
+    }
+
+    setIsLoading(false);
+  }, [isLoggedIn, user, cartItems, router, toast]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -55,11 +91,23 @@ export default function CheckoutPage() {
     e.preventDefault();
     setIsSubmitting(true);
     
+    // ตรวจสอบสถานะการล็อกอินอีกครั้ง
+    if (!isLoggedIn) {
+      toast({
+        title: "กรุณาเข้าสู่ระบบ",
+        description: "คุณต้องเข้าสู่ระบบหรือลงทะเบียนก่อนดำเนินการสั่งซื้อ",
+        duration: 3000,
+      });
+      router.push('/account');
+      setIsSubmitting(false);
+      return;
+    }
+    
     // Simulate order processing
     setTimeout(() => {
       toast({
-        title: "Order placed successfully!",
-        description: "Thank you for your purchase. You will receive a confirmation email shortly.",
+        title: "สั่งซื้อสำเร็จ!",
+        description: "ขอบคุณสำหรับการสั่งซื้อ คุณจะได้รับอีเมลยืนยันในไม่ช้า",
         duration: 5000,
       });
       clearCart();
@@ -68,11 +116,16 @@ export default function CheckoutPage() {
     }, 2000);
   };
 
-  if (cartItems.length === 0) {
-    router.push('/cart');
-    return null;
+  // แสดงข้อความกำลังโหลดหรือส่งผู้ใช้ไปยังหน้าที่เหมาะสม
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-24 mt-16 text-center">
+        <p>กำลังโหลด...</p>
+      </div>
+    );
   }
 
+  // แสดงหน้าชำระเงิน (แสดงเฉพาะเมื่อล็อกอินแล้วและตะกร้าไม่ว่าง)
   return (
     <div className="container mx-auto px-4 py-24 mt-16">
       <div className="max-w-6xl mx-auto">
@@ -80,10 +133,10 @@ export default function CheckoutPage() {
           <Button variant="ghost" size="sm" asChild className="mr-4">
             <Link href="/cart">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Cart
+              กลับไปยังตะกร้า
             </Link>
           </Button>
-          <h1 className="text-3xl font-bold">Checkout</h1>
+          <h1 className="text-3xl font-bold">ชำระเงิน</h1>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

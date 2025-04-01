@@ -93,19 +93,44 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
         
         // ถ้าผู้ใช้ล็อกอินแล้ว บันทึกลงใน Supabase ด้วย
         if (isLoggedIn && user) {
-          const { error } = await supabase
-            .from('wishlists')
-            .upsert({
-              user_id: user.id,
-              items: wishlistItems
-            });
-            
-          if (error) {
-            console.error('เกิดข้อผิดพลาดในการบันทึกรายการโปรดไปยัง Supabase:', error);
+          // ใช้ try/catch เพื่อจัดการกรณีที่เกิดข้อผิดพลาดระหว่างเรียก API
+          try {
+            const { error } = await supabase
+              .from('wishlists')
+              .upsert({
+                user_id: user.id,
+                items: wishlistItems,
+                updated_at: new Date().toISOString()
+              }, {
+                onConflict: 'user_id'
+              });
+              
+            if (error) {
+              // แสดงข้อมูลข้อผิดพลาดอย่างละเอียด
+              console.error('เกิดข้อผิดพลาดในการบันทึกรายการโปรดไปยัง Supabase:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+              });
+              
+              // จัดการตามรหัสข้อผิดพลาด
+              if (error.code === '42P01') {
+                console.error('ไม่พบตาราง wishlists โปรดสร้างตารางก่อนใช้งาน');
+              } else if (error.code === '23503') {
+                console.error('ข้อผิดพลาดเกี่ยวกับ Foreign Key: ไม่พบ user_id ในตาราง auth.users');
+              } else if (error.code === '23505') {
+                console.error('มีข้อมูลซ้ำกัน (Duplicate Key)');
+              } else if (error.code === '42501') {
+                console.error('ไม่มีสิทธิ์ในการเข้าถึงตาราง wishlists');
+              }
+            }
+          } catch (innerError) {
+            console.error('เกิดข้อผิดพลาดที่ไม่คาดคิดในการบันทึกรายการโปรด:', innerError);
           }
         }
       } catch (error) {
-        console.error('เกิดข้อผิดพลาดในการบันทึกรายการโปรด:', error);
+        console.error('เกิดข้อผิดพลาดในการบันทึกรายการโปรด (outer):', error);
       }
     };
     

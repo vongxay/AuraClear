@@ -11,6 +11,7 @@ import { useCart } from '@/context/cart-context';
 import { useWishlist } from '@/context/wishlist-context';
 import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/types/product';
+import { useAuth } from '@/context/auth-context';
 
 interface ProductDetailsProps {
   product: Product;
@@ -21,6 +22,7 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
   const { addToCart } = useCart();
   const { addToWishlist, removeFromWishlist, isInWishlist } = useWishlist();
   const { toast } = useToast();
+  const { isLoggedIn } = useAuth();
 
   const decreaseQuantity = () => {
     if (quantity > 1) {
@@ -36,8 +38,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
     if (isInWishlist(product.id)) {
       removeFromWishlist(product.id);
       toast({
-        title: "Removed from wishlist",
-        description: "This product has been removed from your wishlist.",
+        title: "นำออกจากรายการโปรดแล้ว",
+        description: "สินค้านี้ถูกนำออกจากรายการโปรดของคุณแล้ว",
         duration: 2000,
       });
     } else {
@@ -48,8 +50,8 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
         image: product.image,
       });
       toast({
-        title: "Added to wishlist",
-        description: "This product has been added to your wishlist.",
+        title: "เพิ่มในรายการโปรดแล้ว",
+        description: "สินค้านี้ถูกเพิ่มในรายการโปรดของคุณแล้ว",
         duration: 2000,
       });
     }
@@ -64,11 +66,19 @@ const ProductDetails = ({ product }: ProductDetailsProps) => {
       quantity: quantity
     });
     
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your cart.`,
-      duration: 2000,
-    });
+    if (!isLoggedIn) {
+      toast({
+        title: "เพิ่มในตะกร้าแล้ว",
+        description: `${product.name} ถูกเพิ่มในตะกร้าของคุณแล้ว คุณต้องเข้าสู่ระบบหรือลงทะเบียนก่อนทำการชำระเงิน`,
+        duration: 4000,
+      });
+    } else {
+      toast({
+        title: "เพิ่มในตะกร้าแล้ว",
+        description: `${product.name} ถูกเพิ่มในตะกร้าของคุณแล้ว`,
+        duration: 2000,
+      });
+    }
   };
 
   return (

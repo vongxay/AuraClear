@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info, UserCheck, LogIn } from 'lucide-react';
+import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info, UserCheck, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { useCart } from '@/context/cart-context';
 import { useWishlist } from '@/context/wishlist-context';
+import { useAuth } from '@/context/auth-context';
 import {
   Sheet,
   SheetContent,
@@ -16,32 +17,52 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
+const navLinks = [
+  { name: 'Home', href: '/', icon: <Home className="h-5 w-5" />, thaiName: 'หน้าหลัก' },
+  { name: 'Product', href: '#featured-products', icon: <ShoppingCart className="h-5 w-5" />, thaiName: 'สินค้า', isHashLink: true },
+  { name: 'Categories', href: '#categories', icon: <Grid className="h-5 w-5" />, thaiName: 'หมวดหมู่', isHashLink: true },
+  { name: 'Account', href: '/account', icon: <User className="h-5 w-5" />, thaiName: 'บัญชีผู้ใช้' },
+  { name: 'About', href: '/about', icon: <Info className="h-5 w-5" />, thaiName: 'เกี่ยวกับ' },
+];
+
 const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentHash, setCurrentHash] = useState('');
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { cartItems } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userAvatar, setUserAvatar] = useState('');
+  const { user, isLoggedIn, logout } = useAuth();
 
   const totalItems = useMemo(() => 
     cartItems.reduce((total, item) => total + item.quantity, 0), 
     [cartItems]
   );
 
+  const headerClass = useMemo(() => `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    isScrolled ? 'bg-background/95 backdrop-blur-sm shadow-sm' : 'bg-transparent'
+  }`, [isScrolled]);
+
+  // Optimized scroll listener with throttling
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle hash changes
   useEffect(() => {
     setCurrentHash(window.location.hash);
     
@@ -53,7 +74,7 @@ const Header = memo(() => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const isHashActive = (href: string) => {
+  const isHashActive = useCallback((href: string) => {
     if (!href.startsWith('#')) return false;
     
     const targetId = href.substring(1);
@@ -62,9 +83,9 @@ const Header = memo(() => {
     if (currentHash === '' && href === '/') return true;
     
     return targetId === currentId;
-  };
+  }, [currentHash]);
 
-  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const handleSmoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     
     if (href.startsWith('#')) {
@@ -85,19 +106,11 @@ const Header = memo(() => {
         element.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  };
+  }, [pathname, router]);
 
-  const navLinks = useMemo(() => [
-    { name: 'Home', href: '/', icon: <Home className="h-5 w-5" />, thaiName: 'หน้าหลัก' },
-    { name: 'Product', href: '#featured-products', icon: <ShoppingCart className="h-5 w-5" />, thaiName: 'สินค้า', isHashLink: true },
-    { name: 'Categories', href: '#categories', icon: <Grid className="h-5 w-5" />, thaiName: 'หมวดหมู่', isHashLink: true },
-    { name: 'Account', href: '/account', icon: <User className="h-5 w-5" />, thaiName: 'บัญชีผู้ใช้' },
-    { name: 'About', href: '/about', icon: <Info className="h-5 w-5" />, thaiName: 'เกี่ยวกับ' },
-  ], []);
-
-  const headerClass = useMemo(() => `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled ? 'bg-background/95 backdrop-blur-sm shadow-sm' : 'bg-transparent'
-  }`, [isScrolled]);
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  }, [theme, setTheme]);
 
   return (
     <>
@@ -145,7 +158,7 @@ const Header = memo(() => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={toggleTheme}
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -154,6 +167,11 @@ const Header = memo(() => {
               <Link href="/points">
                 <Button variant="ghost" size="icon" className="relative" aria-label="Points">
                   <Award className="h-5 w-5" />
+                  {isLoggedIn && user && user.points && user.points > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {user.points}
+                    </span>
+                  )}
                 </Button>
               </Link>
               
@@ -179,19 +197,21 @@ const Header = memo(() => {
               </Link>
               {isLoggedIn ? (
                 <div className="relative p-2 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full transform scale-110 shadow-lg hover:scale-125 transition-transform cursor-pointer">
-                  {userAvatar ? (
-                    <Link href="/account">
+                  {user?.avatarUrl ? (
+                    <Link href="/account/profile">
                       <Image 
-                        src={userAvatar} 
+                        src={user.avatarUrl} 
                         width={20} 
                         height={20} 
                         className="rounded-full hover:opacity-80 transition-opacity" 
                         alt="Profile" 
                       />
+                      <span className="sr-only">โปรไฟล์ของ {user.firstName}</span>
                     </Link>
                   ) : (
-                    <Link href="/account">
+                    <Link href="/account/profile">
                       <UserCheck className="h-5 w-5 text-white hover:text-gray-200 transition-colors" />
+                      <span className="sr-only">โปรไฟล์ของ {user?.firstName}</span>
                     </Link>
                   )}
                   <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></span>
@@ -210,6 +230,11 @@ const Header = memo(() => {
               <Link href="/points">
                 <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label="Points">
                   <Award className="h-5 w-5" />
+                  {isLoggedIn && user && user.points && user.points > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {user.points}
+                    </span>
+                  )}
                 </Button>
               </Link>
               <Link href="/wishlist">
@@ -248,12 +273,31 @@ const Header = memo(() => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        onClick={toggleTheme}
                         aria-label="Toggle theme"
                       >
                         {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                       </Button>
                     </div>
+                    
+                    {isLoggedIn && (
+                      <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full">
+                            {user?.avatarUrl ? (
+                              <Image src={user.avatarUrl} width={32} height={32} alt="Avatar" className="rounded-full" />
+                            ) : (
+                              <UserCheck className="h-5 w-5 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                            <p className="text-xs text-muted-foreground">แต้มสะสม: {user?.points || 0} แต้ม</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <nav className="flex flex-col space-y-6">
                       {navLinks.map((link) => (
                         <Link
@@ -271,14 +315,27 @@ const Header = memo(() => {
                       ))}
                     </nav>
                     <div className="mt-auto space-y-4">
-                      <Button variant="outline" className="w-full justify-start" size="lg">
-                        <User className="mr-2 h-5 w-5" />
-                        บัญชีผู้ใช้
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" size="lg">
-                        <Search className="mr-2 h-5 w-5" />
-                        ค้นหา
-                      </Button>
+                      {isLoggedIn ? (
+                        <>
+                          <Button variant="outline" className="w-full justify-start" size="lg" asChild>
+                            <Link href="/account/profile">
+                              <UserCheck className="mr-2 h-5 w-5" />
+                              โปรไฟล์ของฉัน
+                            </Link>
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start" size="lg" onClick={() => logout()}>
+                            <LogOut className="mr-2 h-5 w-5" />
+                            ออกจากระบบ
+                          </Button>
+                        </>
+                      ) : (
+                        <Button variant="outline" className="w-full justify-start" size="lg" asChild>
+                          <Link href="/account">
+                            <User className="mr-2 h-5 w-5" />
+                            บัญชีผู้ใช้
+                          </Link>
+                        </Button>
+                      )}
                       <Button variant="outline" className="w-full justify-start" size="lg" asChild>
                         <Link href="/points">
                           <Award className="mr-2 h-5 w-5" />

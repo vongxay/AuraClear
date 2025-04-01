@@ -1,54 +1,69 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Minus, Plus, Trash2, ArrowRight, ShoppingBag } from 'lucide-react';
+import { Minus, Plus, Trash2, ArrowRight, ShoppingBag, UserIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/auth-context';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 export default function CartPage() {
   const { cartItems, removeFromCart, updateQuantity, clearCart, subtotal } = useCart();
   const [promoCode, setPromoCode] = useState('');
   const [isApplyingPromo, setIsApplyingPromo] = useState(false);
   const { toast } = useToast();
+  const { isLoggedIn } = useAuth();
 
-  const shipping = subtotal > 50 ? 0 : 5.99;
-  const tax = subtotal * 0.08; // 8% tax rate
-  const total = subtotal + shipping + tax;
+  // Memoize calculated values to prevent unnecessary recalculations
+  const { shipping, tax, total } = useMemo(() => {
+    const shippingCost = subtotal > 50 ? 0 : 5.99;
+    const taxAmount = subtotal * 0.08; // 8% tax rate
+    const totalAmount = subtotal + shippingCost + taxAmount;
+    
+    return {
+      shipping: shippingCost,
+      tax: taxAmount, 
+      total: totalAmount
+    };
+  }, [subtotal]);
 
-  const handleRemoveItem = (itemId: string) => {
+  const handleRemoveItem = useCallback((itemId: string) => {
     removeFromCart(itemId);
     toast({
-      title: "Item removed",
-      description: "The item has been removed from your cart.",
+      title: "นำสินค้าออกแล้ว",
+      description: "สินค้าถูกนำออกจากตะกร้าของคุณแล้ว",
       duration: 2000,
     });
-  };
+  }, [removeFromCart, toast]);
 
-  const handleQuantityChange = (itemId: string, newQuantity: number) => {
+  const handleQuantityChange = useCallback((itemId: string, newQuantity: number) => {
     if (newQuantity > 0) {
       updateQuantity(itemId, newQuantity);
     }
-  };
+  }, [updateQuantity]);
 
-  const handleApplyPromo = () => {
+  const handleApplyPromo = useCallback(() => {
+    if (!promoCode) return;
+    
     setIsApplyingPromo(true);
     
     // Simulate API call
     setTimeout(() => {
       toast({
-        title: "Invalid promo code",
-        description: "The promo code you entered is invalid or has expired.",
+        title: "โค้ดส่วนลดไม่ถูกต้อง",
+        description: "โค้ดส่วนลดที่คุณกรอกไม่ถูกต้องหรือหมดอายุแล้ว",
         duration: 3000,
       });
       setIsApplyingPromo(false);
     }, 1000);
-  };
+  }, [promoCode, toast]);
 
+  // Render empty cart view
   if (cartItems.length === 0) {
     return (
       <div className="container mx-auto px-4 py-24 mt-16">
@@ -58,12 +73,12 @@ export default function CartPage() {
               <ShoppingBag className="h-12 w-12 text-muted-foreground" />
             </div>
           </div>
-          <h1 className="text-3xl font-bold mb-4">Your Cart is Empty</h1>
+          <h1 className="text-3xl font-bold mb-4">ตะกร้าของคุณว่างเปล่า</h1>
           <p className="text-muted-foreground mb-8">
-            Looks like you haven&apos;t added any products to your cart yet.
+            ดูเหมือนว่าคุณยังไม่ได้เพิ่มสินค้าลงในตะกร้า
           </p>
           <Button size="lg" asChild>
-            <Link href="/shop">Continue Shopping</Link>
+            <Link href="/shop">เลือกซื้อสินค้าต่อ</Link>
           </Button>
         </div>
       </div>
@@ -72,16 +87,29 @@ export default function CartPage() {
 
   return (
     <div className="container mx-auto px-4 py-24 mt-16">
-      <h1 className="text-3xl font-bold mb-8">Your Shopping Cart</h1>
+      <h1 className="text-3xl font-bold mb-8">ตะกร้าสินค้าของคุณ</h1>
+      
+      {!isLoggedIn && (
+        <Alert className="mb-6 bg-amber-50 border-amber-200">
+          <UserIcon className="h-4 w-4 text-amber-600" />
+          <AlertTitle className="text-amber-800">กรุณาเข้าสู่ระบบก่อนชำระเงิน</AlertTitle>
+          <AlertDescription className="text-amber-700">
+            คุณสามารถเพิ่มสินค้าลงตะกร้าได้ แต่ต้องเข้าสู่ระบบหรือลงทะเบียนก่อนที่จะทำการชำระเงิน{' '}
+            <Link href="/account" className="underline font-medium">
+              เข้าสู่ระบบหรือลงทะเบียน
+            </Link>
+          </AlertDescription>
+        </Alert>
+      )}
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <div className="bg-card rounded-lg shadow-sm p-6">
             <div className="hidden md:grid grid-cols-12 gap-4 mb-4 text-sm font-medium text-muted-foreground">
-              <div className="col-span-6">Product</div>
-              <div className="col-span-2 text-center">Price</div>
-              <div className="col-span-2 text-center">Quantity</div>
-              <div className="col-span-2 text-right">Total</div>
+              <div className="col-span-6">สินค้า</div>
+              <div className="col-span-2 text-center">ราคา</div>
+              <div className="col-span-2 text-center">จำนวน</div>
+              <div className="col-span-2 text-right">รวม</div>
             </div>
             
             <Separator className="mb-6" />
@@ -97,7 +125,9 @@ export default function CartPage() {
                           alt={item.name}
                           fill
                           className="object-cover"
-                          sizes="80px"
+                          sizes="(max-width: 768px) 80px, 80px"
+                          loading="eager"
+                          priority={cartItems.indexOf(item) < 2} // Priority for first two items
                         />
                       </div>
                       <div className="ml-4">
@@ -206,8 +236,8 @@ export default function CartPage() {
             </div>
             
             <Button className="w-full mb-3" asChild>
-              <Link href="/checkout">
-                Checkout
+              <Link href={isLoggedIn ? "/checkout" : "/account"}>
+                {isLoggedIn ? "ชำระเงิน" : "เข้าสู่ระบบเพื่อชำระเงิน"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
@@ -217,7 +247,7 @@ export default function CartPage() {
               className="w-full"
               asChild
             >
-              <Link href="/product">Continue Shopping</Link>
+              <Link href="/product">เลือกซื้อสินค้าต่อ</Link>
             </Button>
           </div>
         </div>
