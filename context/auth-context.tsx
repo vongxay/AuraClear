@@ -2,16 +2,24 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase, getCurrentUser, signIn, signUp, signOut } from '@/lib/supabase';
+import { createOrUpdateCustomer, getCustomerById } from '@/lib/database';
+import { User as SupabaseUser } from '@supabase/supabase-js';
 
 type User = {
   id: string;
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   phone?: string;
   avatarUrl?: string;
   points: number;
   memberSince: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
 };
 
 type AuthContextType = {
@@ -25,8 +33,8 @@ type AuthContextType = {
 };
 
 type RegisterData = {
-  firstName: string;
-  lastName: string;
+  first_name: string;
+  last_name: string;
   email: string;
   password: string;
 };
@@ -37,40 +45,108 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
 
   // เช็คสถานะการล็อกอินเมื่อโหลดแอพ
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // ในอนาคตตรงนี้ควรเรียก API เพื่อตรวจสอบโทเค็นและดึงข้อมูลผู้ใช้
-        // ตรวจสอบว่ามี token ใน localStorage หรือไม่
-        const token = localStorage.getItem('auth_token');
+        // ดึงข้อมูลผู้ใช้จาก Supabase
+        const supabaseUser = await getCurrentUser();
         
-        if (token) {
-          // จำลองการดึงข้อมูลผู้ใช้จาก API
-          // (ในระบบจริงจะต้องส่ง token ไปยัง API เพื่อดึงข้อมูลผู้ใช้)
-          const mockUser: User = {
-            id: '123456',
-            firstName: 'สมชาย',
-            lastName: 'รักช้อป',
-            email: 'somchai@example.com',
-            phone: '081-234-5678',
-            avatarUrl: '',
-            points: 250,
-            memberSince: '15 มีนาคม 2023',
-          };
+        if (supabaseUser) {
+          // ดึงข้อมูลผู้ใช้จากตาราง customers
+          const { success, customer } = await getCustomerById(supabaseUser.id);
+            
+          if (!success) {
+            console.error('เกิดข้อผิดพลาดในการดึงข้อมูลลูกค้า');
+            setIsLoading(false);
+            return;
+          }
           
-          setUser(mockUser);
+          // ถ้าไม่พบข้อมูลลูกค้า ให้สร้างข้อมูลใหม่
+          if (!customer) {
+            console.log('ไม่พบข้อมูลลูกค้า กำลังสร้างข้อมูลใหม่...');
+            
+            // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบหรือไม่
+            if (!supabaseUser.id || !supabaseUser.email) {
+              console.error('ไม่สามารถสร้างข้อมูลลูกค้าได้: ไม่มี ID หรืออีเมลของผู้ใช้');
+              setIsLoading(false);
+              return;
+            }
+            
+            const { success: createSuccess, operation, error: createError } = await createOrUpdateCustomer({
+              id: supabaseUser.id,
+              email: supabaseUser.email || '',
+              first_name: '',
+              last_name: '',
+            });
+            
+            if (!createSuccess) {
+              // แสดงข้อมูลข้อผิดพลาดที่เป็นประโยชน์มากขึ้น
+              const errorMessage = createError?.message || 'ไม่มีรายละเอียดข้อผิดพลาด';
+              console.error(`ไม่สามารถสร้างข้อมูลลูกค้าได้: ${errorMessage}`);
+              setIsLoading(false);
+              return;
+            }
+            
+            // ดึงข้อมูลลูกค้าอีกครั้งหลังจากสร้างข้อมูลใหม่
+            const { success: refetchSuccess, customer: newCustomer } = await getCustomerById(supabaseUser.id);
+            
+            if (refetchSuccess && newCustomer) {
+              setUser({
+                id: supabaseUser.id,
+                first_name: newCustomer.first_name || '',
+                last_name: newCustomer.last_name || '',
+                email: supabaseUser.email || '',
+                phone: newCustomer.phone || '',
+                points: newCustomer.points || 0,
+                memberSince: new Date(newCustomer.created_at || Date.now()).toLocaleDateString('th-TH', { 
+                  year: 'numeric', month: 'long', day: 'numeric' 
+                }),
+              });
+            } else {
+              console.error('ไม่สามารถดึงข้อมูลลูกค้าหลังจากสร้างข้อมูลใหม่');
+            }
+          } else {
+            // ถ้าพบข้อมูลลูกค้า ให้ใช้ข้อมูลที่มีอยู่
+            setUser({
+              id: supabaseUser.id,
+              first_name: customer.first_name || '',
+              last_name: customer.last_name || '',
+              email: supabaseUser.email || '',
+              phone: customer.phone || '',
+              points: customer.points || 0,
+              memberSince: new Date(customer.created_at || Date.now()).toLocaleDateString('th-TH', { 
+                year: 'numeric', month: 'long', day: 'numeric' 
+              }),
+            });
+          }
         }
       } catch (error) {
-        console.error('Failed to check authentication status:', error);
-        localStorage.removeItem('auth_token');
+        console.error('เกิดข้อผิดพลาดในการตรวจสอบสถานะการเข้าสู่ระบบ:', error);
       } finally {
         setIsLoading(false);
       }
     };
 
+    // ฟังก์ชันติดตามการเปลี่ยนแปลงสถานะการเข้าสู่ระบบ
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN' && session?.user) {
+          checkAuth();
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
     checkAuth();
+
+    // ยกเลิกการติดตามเมื่อ component ถูกทำลาย
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
   }, []);
 
   // ฟังก์ชันล็อกอิน
@@ -78,52 +154,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // ในอนาคตตรงนี้จะเป็นการเรียกใช้ API สำหรับการล็อกอิน
-      // จำลองการล็อกอิน (ในระบบจริงจะต้องส่งข้อมูลไปยัง API)
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const { user: supabaseUser, session } = await signIn(email, password);
       
-      // ตรวจสอบข้อมูลผู้ใช้ (ในที่นี้เราใช้การจำลอง)
-      if (email === 'test@example.com' && password === 'password123') {
-        // จำลองการได้รับ token จาก API
-        const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('auth_token', mockToken);
-        
-        // จำลองข้อมูลผู้ใช้
-        const mockUser: User = {
-          id: '123456',
-          firstName: 'สมชาย',
-          lastName: 'รักช้อป',
-          email: email,
-          phone: '081-234-5678',
-          avatarUrl: '',
-          points: 250,
-          memberSince: '15 มีนาคม 2023',
-        };
-        
-        setUser(mockUser);
-        return true;
-      } else {
-        // ในกรณีที่ข้อมูลผิด ให้จำลองการล็อกอินด้วยข้อมูลจำลอง (เฉพาะในตัวอย่างนี้)
-        // ในระบบจริงควรส่งข้อความเตือนว่าอีเมลหรือรหัสผ่านไม่ถูกต้อง
-        const mockToken = 'mock_jwt_token_' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('auth_token', mockToken);
-        
-        const mockUser: User = {
-          id: '123456',
-          firstName: 'ผู้ใช้',
-          lastName: 'ทดสอบ',
-          email: email,
-          phone: '081-234-5678',
-          avatarUrl: '',
-          points: 100,
-          memberSince: new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' }),
-        };
-        
-        setUser(mockUser);
-        return true;
+      if (!supabaseUser) {
+        return false;
       }
+      
+      // ดึงข้อมูลผู้ใช้จากตาราง customers
+      const { success, customer } = await getCustomerById(supabaseUser.id);
+        
+      if (!success) {
+        console.error('ไม่สามารถดึงข้อมูลลูกค้าได้');
+        return false;
+      }
+      
+      // ถ้าไม่มีข้อมูลลูกค้าให้สร้างใหม่
+      if (!customer) {
+        console.log('ไม่พบข้อมูลลูกค้า กำลังสร้างข้อมูลใหม่...');
+        
+        // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบหรือไม่
+        if (!supabaseUser.id || !email) {
+          console.error('ไม่สามารถสร้างข้อมูลลูกค้าได้: ไม่มี ID หรืออีเมลของผู้ใช้');
+          return false;
+        }
+        
+        const { success: createSuccess, error: createError } = await createOrUpdateCustomer({ 
+          id: supabaseUser.id,
+          email: email,
+          first_name: '',
+          last_name: '',
+        });
+          
+        if (!createSuccess) {
+          // แสดงข้อมูลข้อผิดพลาดที่เป็นประโยชน์มากขึ้น
+          const errorMessage = createError?.message || 'ไม่มีรายละเอียดข้อผิดพลาด';
+          console.error(`เกิดข้อผิดพลาดในการสร้างข้อมูลลูกค้า: ${errorMessage}`);
+          return false;
+        }
+        
+        // ดึงข้อมูลลูกค้าอีกครั้งหลังจากสร้างข้อมูลใหม่
+        const { success: refetchSuccess, customer: newCustomer } = await getCustomerById(supabaseUser.id);
+        
+        if (refetchSuccess && newCustomer) {
+          setUser({
+            id: supabaseUser.id,
+            first_name: newCustomer.first_name || '',
+            last_name: newCustomer.last_name || '',
+            email: email,
+            phone: newCustomer.phone || '',
+            points: newCustomer.points || 0,
+            memberSince: new Date(newCustomer.created_at || Date.now()).toLocaleDateString('th-TH', { 
+              year: 'numeric', month: 'long', day: 'numeric' 
+            }),
+          });
+          return true;
+        } else {
+          console.error('ไม่สามารถดึงข้อมูลลูกค้าหลังจากสร้างข้อมูลใหม่');
+          return false;
+        }
+      }
+      
+      // ตั้งค่าข้อมูลผู้ใช้จากข้อมูลลูกค้าที่มีอยู่
+      setUser({
+        id: supabaseUser.id,
+        first_name: customer.first_name || '',
+        last_name: customer.last_name || '',
+        email: supabaseUser.email || '',
+        phone: customer.phone || '',
+        points: customer.points || 0,
+        memberSince: new Date(customer.created_at || Date.now()).toLocaleDateString('th-TH', { 
+          year: 'numeric', month: 'long', day: 'numeric' 
+        }),
+      });
+      
+      return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('เข้าสู่ระบบล้มเหลว:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -135,14 +241,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // ในอนาคตตรงนี้จะเป็นการเรียกใช้ API สำหรับการลงทะเบียน
-      // จำลองการลงทะเบียน
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      const { user: supabaseUser, session, error } = await signUp(userData.email, userData.password);
       
-      // จำลองการสร้างบัญชีใหม่สำเร็จ
+      // ตรวจสอบข้อผิดพลาดจากการลงทะเบียน
+      if (error) {
+        if (error.code === 'user-already-registered') {
+          // กรณีผู้ใช้ลงทะเบียนไปแล้ว
+          setError('อีเมลนี้มีการลงทะเบียนในระบบแล้ว กรุณาใช้อีเมลอื่นหรือเข้าสู่ระบบด้วยอีเมลนี้');
+          return false;
+        } else {
+          // กรณีข้อผิดพลาดอื่นๆ
+          setError(error.message || 'เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+          return false;
+        }
+      }
+      
+      if (!supabaseUser) {
+        setError('เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+        return false;
+      }
+      
+      // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบหรือไม่
+      if (!supabaseUser.id || !userData.email || !userData.first_name || !userData.last_name) {
+        console.error('ไม่สามารถสร้างข้อมูลลูกค้าได้: ข้อมูลผู้ใช้ไม่ครบถ้วน');
+        setError('ข้อมูลสำหรับการลงทะเบียนไม่ครบถ้วน โปรดระบุข้อมูลให้ครบถ้วน');
+        return false;
+      }
+      
+      // สร้างข้อมูลในตาราง customers
+      const { success: customerSuccess, error: customerError } = await createOrUpdateCustomer({
+        id: supabaseUser.id,
+        email: userData.email,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+      });
+        
+      if (!customerSuccess) {
+        // แสดงข้อมูลข้อผิดพลาดที่เป็นประโยชน์มากขึ้น
+        const errorMessage = customerError?.message || 'ไม่มีรายละเอียดข้อผิดพลาด';
+        console.error(`เกิดข้อผิดพลาดในการสร้างข้อมูลลูกค้า: ${errorMessage}`);
+        setError('เกิดข้อผิดพลาดในการสร้างข้อมูลบัญชี โปรดลองอีกครั้ง');
+        return false;
+      }
+      
+      // อย่าล็อกอินอัตโนมัติ ให้ผู้ใช้ยืนยันอีเมลก่อน (ถ้าเปิดใช้งานคุณสมบัตินี้ใน Supabase)
       return true;
-    } catch (error) {
-      console.error('Registration failed:', error);
+    } catch (error: any) {
+      console.error('การลงทะเบียนล้มเหลว:', error);
+      // ตรวจสอบข้อความข้อผิดพลาดเพื่อแสดงคำแนะนำที่เหมาะสม
+      if (error.message?.includes('already registered') || error.message?.includes('already in use')) {
+        setError('อีเมลนี้มีการลงทะเบียนในระบบแล้ว กรุณาใช้อีเมลอื่นหรือเข้าสู่ระบบด้วยอีเมลนี้');
+      } else {
+        setError('เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+      }
       return false;
     } finally {
       setIsLoading(false);
@@ -150,16 +301,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   // ฟังก์ชันออกจากระบบ
-  const logout = () => {
-    localStorage.removeItem('auth_token');
-    setUser(null);
-    router.push('/account');
+  const logout = async () => {
+    try {
+      await signOut();
+      setUser(null);
+      router.push('/account');
+    } catch (error) {
+      console.error('ออกจากระบบล้มเหลว:', error);
+    }
   };
 
   // ฟังก์ชันอัพเดตข้อมูลผู้ใช้
-  const updateUser = (userData: Partial<User>) => {
+  const updateUser = async (userData: Partial<User>) => {
     if (user) {
-      setUser({ ...user, ...userData });
+      try {
+        // อัพเดตข้อมูลในตาราง customers
+        const { success } = await createOrUpdateCustomer({
+          id: user.id,
+          email: user.email,
+          first_name: userData.first_name || user.first_name,
+          last_name: userData.last_name || user.last_name,
+          phone: userData.phone || user.phone,
+          address: userData.address || user.address,
+          city: userData.city || user.city,
+          state: userData.state || user.state,
+          postal_code: userData.postal_code || user.postal_code,
+          country: userData.country || user.country
+        });
+          
+        if (!success) throw new Error('ไม่สามารถอัพเดตข้อมูลลูกค้าได้');
+        
+        // อัพเดตข้อมูลในสเตท
+        setUser({ ...user, ...userData });
+      } catch (error) {
+        console.error('การอัพเดตข้อมูลผู้ใช้ล้มเหลว:', error);
+      }
     }
   };
 
@@ -178,8 +354,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
+  
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
+  
   return context;
 }; 

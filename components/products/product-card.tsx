@@ -41,7 +41,7 @@ const ProductCard = memo(({
     <>
       <div className="relative">
         <Link href={`/product/${product.id}`}>
-          <div className={`${isFeatured ? 'aspect-[4/5]' : 'aspect-[3/4]'} relative overflow-hidden`}>
+          <div className={`${isFeatured ? 'aspect-[1/1]' : 'aspect-[1/1]'} relative overflow-hidden`}>
             <Image
               src={product.image}
               alt={product.name}
@@ -100,36 +100,38 @@ const ProductCard = memo(({
           )}
         </div>
       </div>
-      <CardContent className={isFeatured ? "p-3" : "p-5"}>
+      <CardContent className={isFeatured ? "p-2" : "p-3"}>
         <Link href={`/product/${product.id}`} className="block">
-          <h3 className={`${isFeatured ? 'font-medium text-base' : 'font-semibold text-lg'} mb-1 hover:text-primary transition-colors line-clamp-1`}>
+          <h3 className={`${isFeatured ? 'font-medium text-sm' : 'font-semibold text-base'} mb-1 hover:text-primary transition-colors line-clamp-1`}>
             {product.name}
           </h3>
         </Link>
-        <p className="text-muted-foreground text-sm mb-3 line-clamp-2">{product.description}</p>
-        <div className="flex items-center mb-3">
-          <div className="flex items-center">
-            {[...Array(5)].map((_, i) => (
-              <Star
-                key={i}
-                className={`${isFeatured ? 'h-3 w-3' : 'h-4 w-4'} ${
-                  i < Math.floor(product.rating)
-                    ? 'text-amber-400 fill-amber-400'
-                    : i < product.rating
-                    ? 'text-amber-400 fill-amber-400 opacity-50'
-                    : 'text-muted-foreground/20'
-                }`}
-              />
-            ))}
+        <p className="text-muted-foreground text-xs mb-2 line-clamp-1">{product.description}</p>
+        {!isFeatured && (
+          <div className="flex items-center mb-2">
+            <div className="flex items-center">
+              {[...Array(5)].map((_, i) => (
+                <Star
+                  key={i}
+                  className={`h-4 w-4 ${
+                    i < Math.floor(product.rating)
+                      ? 'text-amber-400 fill-amber-400'
+                      : i < product.rating
+                      ? 'text-amber-400 fill-amber-400 opacity-50'
+                      : 'text-muted-foreground/20'
+                  }`}
+                />
+              ))}
+            </div>
+            <span className="text-sm text-muted-foreground ml-2">
+              ({product.reviews})
+            </span>
           </div>
-          <span className={`${isFeatured ? 'text-xs' : 'text-sm'} text-muted-foreground ml-2`}>
-            ({product.reviews})
-          </span>
-        </div>
+        )}
         <div className="flex items-baseline">
           {product.isOnSale && product.originalPrice ? (
             <>
-              <span className={`${isFeatured ? 'font-semibold text-base' : 'font-bold text-xl text-primary'}`}>
+              <span className={`${isFeatured ? 'font-semibold text-base' : 'font-bold text-lg text-primary'}`}>
                 {isFeatured ? '$' : ''}{product.price.toFixed(2)}{isFeatured ? '' : ' ฿'}
               </span>
               <span className="text-muted-foreground line-through ml-2 text-sm">
@@ -142,41 +144,24 @@ const ProductCard = memo(({
               )}
             </>
           ) : (
-            <span className={`${isFeatured ? 'font-semibold text-base' : 'font-bold text-xl text-primary'}`}>
+            <span className={`${isFeatured ? 'font-semibold text-base' : 'font-bold text-lg text-primary'}`}>
               {isFeatured ? '$' : ''}{product.price.toFixed(2)}{isFeatured ? '' : ' ฿'}
             </span>
           )}
         </div>
       </CardContent>
-      <CardFooter className={isFeatured ? "p-3 pt-0" : "p-5 pt-0"}>
+      <CardFooter className={isFeatured ? "p-2 pt-0" : "p-3 pt-0"}>
         <Button 
-          className={`w-full bg-primary hover:bg-primary/90 ${isFeatured ? 'text-sm py-1' : 'transition-all duration-300 shadow-sm hover:shadow-md'}`}
-          size={isFeatured ? "sm" : "default"}
+          className={`w-full bg-primary hover:bg-primary/90 ${isFeatured ? 'text-sm py-1' : 'text-sm py-1 transition-all duration-300'}`}
+          size={isFeatured ? "sm" : "sm"}
           onClick={() => onAddToCart(product)}
         >
-          <ShoppingBag className={`${isFeatured ? 'h-3 w-3 mr-1' : 'h-4 w-4 mr-2'}`} />
+          <ShoppingBag className={`${isFeatured ? 'h-3 w-3 mr-1' : 'h-3 w-3 mr-1'}`} />
           {isFeatured ? 'Add to Cart' : 'เพิ่มลงตะกร้า'}
         </Button>
       </CardFooter>
     </>
   );
-
-  if (variant === 'grid') {
-    return (
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4, delay: index * 0.05 }}
-        whileHover={{ y: -5 }}
-        onHoverStart={() => onHoverChange && onHoverChange(true)}
-        onHoverEnd={() => onHoverChange && onHoverChange(false)}
-      >
-        <Card className={baseCardClass}>
-          {cardContent}
-        </Card>
-      </motion.div>
-    );
-  }
 
   return (
     <Card className={baseCardClass}>
@@ -187,4 +172,4 @@ const ProductCard = memo(({
 
 ProductCard.displayName = 'ProductCard';
 
-export default ProductCard; 
+export default ProductCard;

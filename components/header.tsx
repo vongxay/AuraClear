@@ -1,13 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, memo } from 'react';
+import React, { useState, useEffect, useMemo, memo, useCallback } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info } from 'lucide-react';
+import { ShoppingBag, User, Search, Menu, X, Sun, Moon, Heart, Award, Home, ShoppingCart, Grid, Phone, Info, UserCheck, LogIn, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useTheme } from 'next-themes';
 import { useCart } from '@/context/cart-context';
 import { useWishlist } from '@/context/wishlist-context';
+import { useAuth } from '@/context/auth-context';
 import {
   Sheet,
   SheetContent,
@@ -15,30 +17,52 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 
+const navLinks = [
+  { name: 'Home', href: '/', icon: <Home className="h-5 w-5" />, thaiName: 'หน้าหลัก' },
+  { name: 'Product', href: '#featured-products', icon: <ShoppingCart className="h-5 w-5" />, thaiName: 'สินค้า', isHashLink: true },
+  { name: 'Categories', href: '#categories', icon: <Grid className="h-5 w-5" />, thaiName: 'หมวดหมู่', isHashLink: true },
+  { name: 'Account', href: '/account', icon: <User className="h-5 w-5" />, thaiName: 'บัญชีผู้ใช้' },
+  { name: 'About', href: '/about', icon: <Info className="h-5 w-5" />, thaiName: 'เกี่ยวกับ' },
+];
+
 const Header = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [currentHash, setCurrentHash] = useState('');
   const pathname = usePathname();
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { cartItems } = useCart();
   const { totalItems: wishlistCount } = useWishlist();
+  const { user, isLoggedIn, logout } = useAuth();
 
   const totalItems = useMemo(() => 
     cartItems.reduce((total, item) => total + item.quantity, 0), 
     [cartItems]
   );
 
+  const headerClass = useMemo(() => `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+    isScrolled ? 'bg-background/95 backdrop-blur-sm shadow-sm' : 'bg-transparent'
+  }`, [isScrolled]);
+
+  // Optimized scroll listener with throttling
   useEffect(() => {
+    let ticking = false;
+    
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(window.scrollY > 20);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Handle hash changes
   useEffect(() => {
     setCurrentHash(window.location.hash);
     
@@ -50,8 +74,23 @@ const Header = memo(() => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+  const isHashActive = useCallback((href: string) => {
+    if (!href.startsWith('#')) return false;
+    
+    const targetId = href.substring(1);
+    const currentId = currentHash.startsWith('#') ? currentHash.substring(1) : currentHash;
+    
+    if (currentHash === '' && href === '/') return true;
+    
+    return targetId === currentId;
+  }, [currentHash]);
+
+  const handleSmoothScroll = useCallback((e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
+    
+    if (href.startsWith('#')) {
+      setCurrentHash(href);
+    }
     
     if (pathname !== '/') {
       router.push('/');
@@ -67,19 +106,11 @@ const Header = memo(() => {
         element.scrollIntoView({ behavior: 'smooth' });
       }
     }
-  };
+  }, [pathname, router]);
 
-  const navLinks = useMemo(() => [
-    { name: 'Home', href: '/', icon: <Home className="h-5 w-5" />, thaiName: 'หน้าหลัก' },
-    { name: 'Product', href: '#featured-products', icon: <ShoppingCart className="h-5 w-5" />, thaiName: 'สินค้า', isHashLink: true },
-    { name: 'Categories', href: '#categories', icon: <Grid className="h-5 w-5" />, thaiName: 'หมวดหมู่', isHashLink: true },
-    { name: 'Account', href: '/account', icon: <User className="h-5 w-5" />, thaiName: 'บัญชีผู้ใช้' },
-    { name: 'About', href: '/about', icon: <Info className="h-5 w-5" />, thaiName: 'เกี่ยวกับ' },
-  ], []);
-
-  const headerClass = useMemo(() => `fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-    isScrolled ? 'bg-background/95 backdrop-blur-sm shadow-sm' : 'bg-transparent'
-  }`, [isScrolled]);
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === 'dark' ? 'light' : 'dark');
+  }, [theme, setTheme]);
 
   return (
     <>
@@ -99,7 +130,7 @@ const Header = memo(() => {
                     href={link.href}
                     onClick={(e) => handleSmoothScroll(e, link.href)}
                     className={`text-sm font-medium transition-colors hover:text-primary cursor-pointer ${
-                      pathname === '/' && currentHash === link.href
+                      pathname === '/' && isHashActive(link.href)
                         ? 'text-primary'
                         : 'text-muted-foreground'
                     }`}
@@ -127,7 +158,7 @@ const Header = memo(() => {
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={toggleTheme}
                 aria-label="Toggle theme"
               >
                 {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -136,6 +167,11 @@ const Header = memo(() => {
               <Link href="/points">
                 <Button variant="ghost" size="icon" className="relative" aria-label="Points">
                   <Award className="h-5 w-5" />
+                  {isLoggedIn && user && user.points && user.points > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {user.points}
+                    </span>
+                  )}
                 </Button>
               </Link>
               
@@ -159,9 +195,34 @@ const Header = memo(() => {
                   )}
                 </Button>
               </Link>
-              <Button variant="ghost" size="icon" aria-label="Account">
-                <User className="h-5 w-5" />
-              </Button>
+              {isLoggedIn ? (
+                <div className="relative p-2 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full transform scale-110 shadow-lg hover:scale-125 transition-transform cursor-pointer">
+                  {user?.avatarUrl ? (
+                    <Link href="/account/profile">
+                      <Image 
+                        src={user.avatarUrl} 
+                        width={20} 
+                        height={20} 
+                        className="rounded-full hover:opacity-80 transition-opacity" 
+                        alt="Profile" 
+                      />
+                      <span className="sr-only">โปรไฟล์ของ {user.first_name}</span>
+                    </Link>
+                  ) : (
+                    <Link href="/account/profile">
+                      <UserCheck className="h-5 w-5 text-white hover:text-gray-200 transition-colors" />
+                      <span className="sr-only">โปรไฟล์ของ {user?.first_name}</span>
+                    </Link>
+                  )}
+                  <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse"></span>
+                </div>
+              ) : (
+                <Link href="/account">
+                  <div className="p-2 rounded-full border border-dashed border-muted-foreground/50 hover:border-primary/70 hover:scale-110 transition-all cursor-pointer">
+                    <LogIn className="h-5 w-5 hover:text-primary transition-colors" />
+                  </div>
+                </Link>
+              )}
             </div>
 
             {/* Mobile Header Actions - Simplified */}
@@ -169,6 +230,11 @@ const Header = memo(() => {
               <Link href="/points">
                 <Button variant="ghost" size="icon" className="relative h-10 w-10" aria-label="Points">
                   <Award className="h-5 w-5" />
+                  {isLoggedIn && user && user.points && user.points > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {user.points}
+                    </span>
+                  )}
                 </Button>
               </Link>
               <Link href="/wishlist">
@@ -207,12 +273,31 @@ const Header = memo(() => {
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                        onClick={toggleTheme}
                         aria-label="Toggle theme"
                       >
                         {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
                       </Button>
                     </div>
+                    
+                    {isLoggedIn && (
+                      <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-pink-500 to-purple-500 rounded-full">
+                            {user?.avatarUrl ? (
+                              <Image src={user.avatarUrl} width={32} height={32} alt="Avatar" className="rounded-full" />
+                            ) : (
+                              <UserCheck className="h-5 w-5 text-white" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">{user?.first_name} {user?.last_name}</p>
+                            <p className="text-xs text-muted-foreground">แต้มสะสม: {user?.points || 0} แต้ม</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     <nav className="flex flex-col space-y-6">
                       {navLinks.map((link) => (
                         <Link
@@ -230,14 +315,27 @@ const Header = memo(() => {
                       ))}
                     </nav>
                     <div className="mt-auto space-y-4">
-                      <Button variant="outline" className="w-full justify-start" size="lg">
-                        <User className="mr-2 h-5 w-5" />
-                        บัญชีผู้ใช้
-                      </Button>
-                      <Button variant="outline" className="w-full justify-start" size="lg">
-                        <Search className="mr-2 h-5 w-5" />
-                        ค้นหา
-                      </Button>
+                      {isLoggedIn ? (
+                        <>
+                          <Button variant="outline" className="w-full justify-start" size="lg" asChild>
+                            <Link href="/account/profile">
+                              <UserCheck className="mr-2 h-5 w-5" />
+                              โปรไฟล์ของฉัน
+                            </Link>
+                          </Button>
+                          <Button variant="outline" className="w-full justify-start" size="lg" onClick={() => logout()}>
+                            <LogOut className="mr-2 h-5 w-5" />
+                            ออกจากระบบ
+                          </Button>
+                        </>
+                      ) : (
+                        <Button variant="outline" className="w-full justify-start" size="lg" asChild>
+                          <Link href="/account">
+                            <User className="mr-2 h-5 w-5" />
+                            บัญชีผู้ใช้
+                          </Link>
+                        </Button>
+                      )}
                       <Button variant="outline" className="w-full justify-start" size="lg" asChild>
                         <Link href="/points">
                           <Award className="mr-2 h-5 w-5" />
@@ -268,46 +366,85 @@ const Header = memo(() => {
       {/* Mobile Bottom Navigation - App-like experience */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md shadow-[0_-2px_10px_rgba(0,0,0,0.1)] z-50 border-t border-border">
         <div className="flex justify-around items-center h-16">
-          {navLinks.map((link) => (
-            link.isHashLink ? (
+          {navLinks.map((link, index) => {
+            const colors = ['from-pink-500 to-purple-500', 'from-sky-400 to-blue-500', 'from-amber-500 to-orange-500', 'from-emerald-400 to-teal-500', 'from-rose-400 to-red-500'];
+            const bgColor = colors[index % colors.length];
+            
+            let isActive = false;
+            
+            if (link.isHashLink) {
+              if (pathname === '/') {
+                isActive = link.href === currentHash || 
+                          (link.href.startsWith('#') && '#' + link.href.substring(1) === currentHash);
+              }
+            } else {
+              if (link.href === '/' && pathname === '/') {
+                isActive = !currentHash || currentHash === '';
+              } else {
+                isActive = pathname === link.href;
+              }
+            }
+            
+            return link.isHashLink ? (
               <a
                 key={link.name}
                 href={link.href}
-                onClick={(e) => handleSmoothScroll(e, link.href)}
-                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
-                  pathname === '/' && currentHash === link.href
-                    ? 'text-pink-500'
-                    : 'text-muted-foreground'
+                onClick={(e) => {
+                  handleSmoothScroll(e, link.href);
+                  setCurrentHash(link.href);
+                }}
+                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors duration-300 ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <div className="mb-1">
+                <div className={`relative mb-1 p-2 transition-all duration-300 ${
+                  isActive
+                    ? `bg-gradient-to-br ${bgColor} rounded-full transform scale-110 shadow-lg`
+                    : 'rounded-full'
+                }`}>
                   {link.icon}
+                  {isActive && (
+                    <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse" style={{ animationDuration: '3s' }}></span>
+                  )}
                 </div>
-                <span className="text-xs font-medium">{link.thaiName || link.name}</span>
-                {pathname === '/' && currentHash === link.href && (
-                  <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
+                <span className={`text-xs font-medium transition-all duration-300 ${
+                  isActive ? 'font-bold' : ''
+                }`}>{link.thaiName || link.name}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 w-10 h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-t-md"></span>
                 )}
               </a>
             ) : (
               <Link
                 key={link.name}
                 href={link.href}
-                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors ${
-                  pathname === link.href
-                    ? 'text-pink-500'
-                    : 'text-muted-foreground'
+                className={`flex flex-col items-center justify-center w-full h-full pt-1 transition-colors duration-300 ${
+                  isActive
+                    ? 'text-white'
+                    : 'text-muted-foreground hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <div className="mb-1">
+                <div className={`relative mb-1 p-2 transition-all duration-300 ${
+                  isActive
+                    ? `bg-gradient-to-br ${bgColor} rounded-full transform scale-110 shadow-lg`
+                    : 'rounded-full'
+                }`}>
                   {link.icon}
+                  {isActive && (
+                    <span className="absolute inset-0 bg-white/20 rounded-full animate-pulse" style={{ animationDuration: '3s' }}></span>
+                  )}
                 </div>
-                <span className="text-xs font-medium">{link.thaiName || link.name}</span>
-                {pathname === link.href && (
-                  <span className="absolute bottom-0 w-10 h-1 bg-pink-500 rounded-t-md transition-all duration-200"></span>
+                <span className={`text-xs font-medium transition-all duration-300 ${
+                  isActive ? 'font-bold' : ''
+                }`}>{link.thaiName || link.name}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 w-10 h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-t-md"></span>
                 )}
               </Link>
-            )
-          ))}
+            );
+          })}
         </div>
       </div>
       

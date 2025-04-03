@@ -50,7 +50,7 @@ export default function ContactPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Contact Us</h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Have questions, feedback, or need assistance? We're here to help. Reach out to our team using the form below or through our contact information.
+            Have questions, feedback, or need assistance? We&apos;re here to help. Reach out to our team using the form below or through our contact information.
           </p>
         </div>
         
@@ -231,7 +231,7 @@ export default function ContactPage() {
               <div>
                 <h3 className="text-lg font-medium mb-2">How can I track my order?</h3>
                 <p className="text-muted-foreground">
-                  Once your order ships, you'll receive a confirmation email with tracking information. You can also track your order in your account dashboard.
+                  Once your order ships, you&apos;ll receive a confirmation email with tracking information. You can also track your order in your account dashboard.
                 </p>
               </div>
             </div>

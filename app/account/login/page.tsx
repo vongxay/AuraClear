@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/container';
@@ -17,7 +17,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, isLoggedIn } = useAuth();
+
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.push('/account/profile');
+    }
+  }, [isLoggedIn, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +42,10 @@ export default function LoginPage() {
       console.error('Login error:', err);
     }
   };
+
+  if (isLoggedIn) {
+    return null; // หรือแสดงข้อความกำลังนำทางไปหน้าโปรไฟล์
+  }
 
   return (
     <Container className="py-20">

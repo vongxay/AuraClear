@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Trash2, ShoppingBag, Heart } from 'lucide-react';
@@ -10,21 +10,29 @@ import { useWishlist } from '@/context/wishlist-context';
 import { useCart } from '@/context/cart-context';
 import { useToast } from '@/hooks/use-toast';
 
+// กำหนดประเภทข้อมูลสำหรับสินค้า
+type WishlistItem = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+}
+
 export default function WishlistPage() {
   const { wishlistItems, removeFromWishlist, clearWishlist } = useWishlist();
   const { addToCart } = useCart();
   const { toast } = useToast();
 
-  const handleRemoveItem = (itemId: string) => {
+  const handleRemoveItem = useCallback((itemId: string) => {
     removeFromWishlist(itemId);
     toast({
       title: "Item removed",
       description: "The item has been removed from your wishlist.",
       duration: 2000,
     });
-  };
+  }, [removeFromWishlist, toast]);
 
-  const handleAddToCart = (item: any) => {
+  const handleAddToCart = useCallback((item: WishlistItem) => {
     addToCart({
       id: item.id,
       name: item.name,
@@ -38,7 +46,16 @@ export default function WishlistPage() {
       description: `${item.name} has been added to your cart.`,
       duration: 2000,
     });
-  };
+  }, [addToCart, toast]);
+
+  const handleClearWishlist = useCallback(() => {
+    clearWishlist();
+    toast({
+      title: "Wishlist cleared",
+      description: "All items have been removed from your wishlist.",
+      duration: 2000,
+    });
+  }, [clearWishlist, toast]);
 
   if (wishlistItems.length === 0) {
     return (
@@ -51,7 +68,7 @@ export default function WishlistPage() {
           </div>
           <h1 className="text-3xl font-bold mb-4">Your Wishlist is Empty</h1>
           <p className="text-muted-foreground mb-8">
-            Looks like you haven't added any products to your wishlist yet.
+            Looks like you haven&apos;t added any products to your wishlist yet.
           </p>
           <Button size="lg" asChild>
             <Link href="/shop">Continue Shopping</Link>
@@ -129,18 +146,11 @@ export default function WishlistPage() {
       
       <div className="flex justify-between mt-8">
         <Button variant="outline" asChild>
-          <Link href="/product">Continue Shopping</Link>
+          <Link href="/shop">Continue Shopping</Link>
         </Button>
         <Button 
           variant="destructive" 
-          onClick={() => {
-            clearWishlist();
-            toast({
-              title: "Wishlist cleared",
-              description: "All items have been removed from your wishlist.",
-              duration: 2000,
-            });
-          }}
+          onClick={handleClearWishlist}
         >
           Clear Wishlist
         </Button>

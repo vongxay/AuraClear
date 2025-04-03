@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Container } from '@/components/ui/container';
@@ -8,92 +8,64 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { Checkbox } from "@/components/ui/checkbox";
+import { Eye, EyeOff, ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 
 export default function RegisterPage() {
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
+  const [first_name, setFirstName] = useState('');
+  const [last_name, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
-  const [agreeTerms, setAgreeTerms] = useState(false);
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const { register, isLoading } = useAuth();
+  const { register, isLoading, isLoggedIn } = useAuth();
 
-  const validatePassword = (password: string) => {
-    return password.length >= 8;
-  };
+  useEffect(() => {
+    if (isLoggedIn) {
+      router.push('/account/profile');
+    }
+  }, [isLoggedIn, router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccess(false);
 
-    if (!agreeTerms) {
-      setError('คุณต้องยอมรับข้อกำหนดและเงื่อนไขเพื่อดำเนินการต่อ');
-      return;
-    }
-
+    // ตรวจสอบว่ารหัสผ่านตรงกันหรือไม่
     if (password !== confirmPassword) {
-      setError('รหัสผ่านและยืนยันรหัสผ่านไม่ตรงกัน');
-      return;
-    }
-
-    if (!validatePassword(password)) {
-      setError('รหัสผ่านต้องมีความยาวอย่างน้อย 8 ตัวอักษร');
+      setError('รหัสผ่านไม่ตรงกัน');
       return;
     }
 
     try {
       const success = await register({
-        firstName,
-        lastName,
+        first_name,
+        last_name,
         email,
         password
       });
       
       if (success) {
         setSuccess(true);
-        
-        // หลังจากสมัครสำเร็จ จะรอสักครู่แล้วนำผู้ใช้ไปยังหน้าล็อกอิน
+        // รอสักครู่แล้วนำทางไปหน้าเข้าสู่ระบบ
         setTimeout(() => {
           router.push('/account/login');
         }, 3000);
       } else {
-        setError('เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+        setError('ไม่สามารถลงทะเบียนได้ โปรดตรวจสอบข้อมูลของคุณและลองอีกครั้ง');
       }
-    } catch (err) {
-      setError('เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
+    } catch (err: any) {
+      setError(err.message || 'เกิดข้อผิดพลาดในการลงทะเบียน โปรดลองอีกครั้ง');
       console.error('Registration error:', err);
     }
   };
 
-  if (success) {
-    return (
-      <Container className="py-20">
-        <div className="max-w-md mx-auto">
-          <Card className="shadow-md">
-            <CardContent className="pt-6 flex flex-col items-center text-center">
-              <CheckCircle2 className="h-16 w-16 text-green-500 mb-4" />
-              <h2 className="text-2xl font-bold mb-2">ลงทะเบียนสำเร็จ!</h2>
-              <p className="text-muted-foreground mb-6">
-                ขอบคุณที่ลงทะเบียนกับ AuraClear คุณจะถูกนำไปยังหน้าเข้าสู่ระบบในอีกสักครู่
-              </p>
-              <Button 
-                onClick={() => router.push('/account/login')}
-                className="bg-pink-500 hover:bg-pink-600"
-              >
-                ไปยังหน้าเข้าสู่ระบบ
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </Container>
-    );
+  if (isLoggedIn) {
+    return null; // หรือแสดงข้อความกำลังนำทางไปหน้าโปรไฟล์
   }
 
   return (
@@ -108,112 +80,132 @@ export default function RegisterPage() {
           <CardHeader>
             <CardTitle className="text-2xl font-bold">สมัครสมาชิก</CardTitle>
             <CardDescription>
-              สร้างบัญชีใหม่เพื่อเริ่มช้อปปิ้งกับเรา
+              สร้างบัญชีใหม่เพื่อใช้งานเว็บไซต์ของเรา
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit}>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="firstName">ชื่อ</Label>
-                    <Input
-                      id="firstName"
-                      placeholder="ชื่อของคุณ"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="lastName">นามสกุล</Label>
-                    <Input
-                      id="lastName"
-                      placeholder="นามสกุลของคุณ"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      required
-                    />
-                  </div>
+            {success ? (
+              <div className="p-4 rounded-md bg-green-50 text-green-700 flex items-start gap-3 dark:bg-green-950 dark:text-green-300">
+                <Check className="h-5 w-5 mt-0.5 flex-shrink-0" />
+                <div>
+                  <p className="font-medium">ลงทะเบียนสำเร็จ!</p>
+                  <p className="text-sm mt-1">กรุณาเข้าสู่ระบบเพื่อใช้งานบัญชีของคุณ</p>
+                  <p className="text-sm mt-3">กำลังนำคุณไปยังหน้าเข้าสู่ระบบ...</p>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">อีเมล</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="อีเมลของคุณ"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="password">รหัสผ่าน</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4 text-muted-foreground" />
-                      ) : (
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
-                  <Input
-                    id="confirmPassword"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="ป้อนรหัสผ่านอีกครั้ง"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                
-                <div className="flex items-start space-x-2 pt-2">
-                  <Checkbox 
-                    id="terms" 
-                    checked={agreeTerms}
-                    onCheckedChange={(checked) => setAgreeTerms(checked === true)}
-                  />
-                  <Label 
-                    htmlFor="terms" 
-                    className="text-sm font-normal leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                  >
-                    ฉันยอมรับ <Link href="/terms" className="text-pink-500 hover:text-pink-600">ข้อกำหนดและเงื่อนไข</Link> และ <Link href="/privacy-policy" className="text-pink-500 hover:text-pink-600">นโยบายความเป็นส่วนตัว</Link>
-                  </Label>
-                </div>
-                
-                {error && (
-                  <div className="p-3 rounded-md bg-red-50 text-red-500 text-sm dark:bg-red-950 dark:text-red-300">
-                    {error}
-                  </div>
-                )}
-
-                <Button 
-                  type="submit" 
-                  className="w-full bg-pink-500 hover:bg-pink-600 mt-2"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'กำลังสมัครสมาชิก...' : 'สมัครสมาชิก'}
-                </Button>
               </div>
-            </form>
+            ) : (
+              <form onSubmit={handleSubmit}>
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="first_name">ชื่อ</Label>
+                      <Input
+                        id="first_name"
+                        type="text"
+                        placeholder="ชื่อของคุณ"
+                        value={first_name}
+                        onChange={(e) => setFirstName(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="last_name">นามสกุล</Label>
+                      <Input
+                        id="last_name"
+                        type="text"
+                        placeholder="นามสกุลของคุณ"
+                        value={last_name}
+                        onChange={(e) => setLastName(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="email">อีเมล</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="อีเมลของคุณ"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="password">รหัสผ่าน</Label>
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="รหัสผ่านของคุณ"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
+                    <div className="relative">
+                      <Input
+                        id="confirmPassword"
+                        type={showConfirmPassword ? "text" : "password"}
+                        placeholder="ยืนยันรหัสผ่านของคุณ"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        minLength={6}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      >
+                        {showConfirmPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {error && (
+                    <div className="p-3 rounded-md bg-red-50 text-red-500 flex items-start gap-2 text-sm dark:bg-red-950 dark:text-red-300">
+                      <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+                  
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-pink-500 hover:bg-pink-600"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? 'กำลังลงทะเบียน...' : 'สมัครสมาชิก'}
+                  </Button>
+                </div>
+              </form>
+            )}
           </CardContent>
           <CardFooter>
             <div className="text-sm text-center w-full">
