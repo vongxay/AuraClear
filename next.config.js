@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  output: 'standalone',
+  distDir: 'out',
   images: {
     domains: ['images.unsplash.com'],
     formats: ['image/avif', 'image/webp'],
@@ -9,10 +11,9 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   experimental: {
-    optimizeCss: true,
     scrollRestoration: true,
-    transpilePackages: ['framer-motion', 'lucide-react'],
   },
+  transpilePackages: ['framer-motion', 'lucide-react'],
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production',
   },
@@ -23,13 +24,9 @@ const nextConfig = {
   // Enable brotli compression for better performance
   compress: true,
   poweredByHeader: false,
-  telemetry: { telemetryDisabled: true },
-  tracing: { 
-    ignoreRootSpans: true,
-    tracingIgnoreSpans: {
-      all: true
-    }
-  },
+  // Disable tracing to avoid permission issues
+  tracePageData: false,
+  generateEtags: false,
 };
 
 module.exports = nextConfig;

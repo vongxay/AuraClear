@@ -687,9 +687,9 @@ const WishlistTab = memo(({ user }: { user: any }) => {
     const fetchWishlist = async () => {
       setIsLoading(true);
       try {
-        const { success, wishlist } = await getCustomerWishlist(user.id);
+        const { success, wishlistItems } = await getCustomerWishlist(user.id);
         if (success) {
-          setWishlist(wishlist);
+          setWishlist(wishlistItems);
         } else {
           setError('ไม่สามารถดึงข้อมูลสินค้าที่ชอบได้');
         }
